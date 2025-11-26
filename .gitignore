@@ -54,6 +54,7 @@ logs/
 *.swo
 *~
 .DS_Store
+.vs/
 
 # Ignore Docker volumes
 docker-volumes/
