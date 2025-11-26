@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
-import { Activity, FileText, Shield, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function Dashboard() {
@@ -22,19 +21,19 @@ export default function Dashboard() {
         {
             name: 'Medical Records',
             value: observations?.count || 0,
-            icon: FileText,
+            icon: '📄',
             color: 'bg-blue-500',
         },
         {
             name: 'Active Consents',
             value: consents?.count || 0,
-            icon: Shield,
+            icon: '🛡️',
             color: 'bg-green-500',
         },
         {
             name: 'Recent Activity',
             value: observations?.observations?.slice(0, 5).length || 0,
-            icon: Activity,
+            icon: '💓',
             color: 'bg-purple-500',
         },
     ]
@@ -64,7 +63,7 @@ export default function Dashboard() {
                                 </p>
                             </div>
                             <div className={`${stat.color} p-3 rounded-lg`}>
-                                <stat.icon className="w-6 h-6 text-white" />
+                                <span className="text-white text-xl">{stat.icon}</span>
                             </div>
                         </div>
                     </div>
@@ -97,7 +96,7 @@ export default function Dashboard() {
                             >
                                 <div className="flex items-center space-x-4">
                                     <div className="bg-primary-100 p-2 rounded-lg">
-                                        <FileText className="w-5 h-5 text-primary-600" />
+                                        <span className="text-xl">📄</span>
                                     </div>
                                     <div>
                                         <p className="font-medium text-gray-900">
@@ -113,7 +112,7 @@ export default function Dashboard() {
                                         {obs.status}
                                     </span>
                                     <div className="text-xs text-gray-500 flex items-center">
-                                        <Shield className="w-3 h-3 mr-1" />
+                                        <span className="mr-1">🛡️</span>
                                         Verified
                                     </div>
                                 </div>
@@ -122,7 +121,7 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <div className="text-4xl mb-4">📄</div>
                         <p className="text-gray-600">No medical records yet</p>
                         <p className="text-sm text-gray-500 mt-1">
                             Your records will appear here once providers add them
@@ -132,10 +131,10 @@ export default function Dashboard() {
             </div>
 
             {/* Blockchain Info */}
-            <div className="card p-6 bg-gradient-to-r from-cardano-blue to-cardano-light text-white">
+            <div className="card p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
                 <div className="flex items-start space-x-4">
                     <div className="bg-white/20 p-3 rounded-lg">
-                        <Shield className="w-6 h-6" />
+                        <span className="text-2xl">🛡️</span>
                     </div>
                     <div className="flex-1">
                         <h3 className="text-lg font-bold mb-2">Blockchain Security</h3>
@@ -159,7 +158,7 @@ export default function Dashboard() {
                                 className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
                             >
                                 <div className="flex items-center space-x-3">
-                                    <Shield className="w-5 h-5 text-green-600" />
+                                    <span className="text-green-600">🛡️</span>
                                     <div>
                                         <p className="text-sm font-medium text-gray-900">
                                             Provider: {consent.provider_did.substring(0, 20)}...

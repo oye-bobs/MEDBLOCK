@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useCardanoWallet } from '../hooks/useCardanoWallet'
 import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
-import { CardWallet, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 export default function Register() {
     const { connect, connected, walletName, signMessage } = useCardanoWallet()
@@ -77,11 +76,11 @@ export default function Register() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-primary-600 mb-2">MEDBLOCK</h1>
+                    <h1 className="text-4xl font-bold text-blue-600 mb-2">MEDBLOCK</h1>
                     <p className="text-gray-600">Blockchain-based Medical Records</p>
                 </div>
 
@@ -90,7 +89,7 @@ export default function Register() {
                     {step === 'connect' && (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <CardWallet className="w-16 h-16 text-primary-600 mx-auto mb-4" />
+                                <div className="text-6xl mb-4">💳</div>
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                     Connect Your Wallet
                                 </h2>
@@ -101,14 +100,14 @@ export default function Register() {
 
                             {error && (
                                 <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <span>⚠️</span>
                                     <p className="text-sm">{error}</p>
                                 </div>
                             )}
 
                             <button
                                 onClick={handleConnectWallet}
-                                className="w-full btn btn-primary px-6 py-3 text-lg"
+                                className="w-full bg-blue-600 text-white rounded-lg px-6 py-3 text-lg font-semibold hover:bg-blue-700 transition-colors"
                             >
                                 Connect Wallet
                             </button>
@@ -122,7 +121,7 @@ export default function Register() {
                     {step === 'form' && (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                                <div className="text-5xl mb-4 text-green-600">✅</div>
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                     Create Your Profile
                                 </h2>
@@ -133,7 +132,7 @@ export default function Register() {
 
                             {error && (
                                 <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <span>⚠️</span>
                                     <p className="text-sm">{error}</p>
                                 </div>
                             )}
@@ -151,7 +150,7 @@ export default function Register() {
                                             onChange={(e) =>
                                                 setFormData({ ...formData, givenName: e.target.value })
                                             }
-                                            className="input w-full"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
                                     <div>
@@ -165,7 +164,7 @@ export default function Register() {
                                             onChange={(e) =>
                                                 setFormData({ ...formData, familyName: e.target.value })
                                             }
-                                            className="input w-full"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
                                 </div>
@@ -179,7 +178,7 @@ export default function Register() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, gender: e.target.value })
                                         }
-                                        className="input w-full"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     >
                                         <option value="unknown">Prefer not to say</option>
                                         <option value="male">Male</option>
@@ -198,7 +197,7 @@ export default function Register() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, birthDate: e.target.value })
                                         }
-                                        className="input w-full"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
 
@@ -213,7 +212,7 @@ export default function Register() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, email: e.target.value })
                                         }
-                                        className="input w-full"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
 
@@ -227,11 +226,11 @@ export default function Register() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, phone: e.target.value })
                                         }
-                                        className="input w-full"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
 
-                                <button type="submit" className="w-full btn btn-primary px-6 py-3">
+                                <button type="submit" className="w-full bg-blue-600 text-white rounded-lg px-6 py-3 font-semibold hover:bg-blue-700 transition-colors">
                                     Create Account
                                 </button>
                             </form>
@@ -240,7 +239,7 @@ export default function Register() {
 
                     {step === 'creating' && (
                         <div className="text-center space-y-6 py-8">
-                            <Loader2 className="w-16 h-16 text-primary-600 mx-auto animate-spin" />
+                            <div className="text-6xl animate-pulse">⏳</div>
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                     Creating Your Identity

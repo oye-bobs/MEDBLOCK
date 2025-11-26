@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
-import { FileText, Shield, ExternalLink, Calendar, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 
@@ -52,7 +51,7 @@ export default function Records() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-4 flex-1">
                                         <div className="bg-primary-100 p-3 rounded-lg">
-                                            <FileText className="w-6 h-6 text-primary-600" />
+                                            <span className="text-xl">📄</span>
                                         </div>
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-gray-900 text-lg">
@@ -60,7 +59,7 @@ export default function Records() {
                                             </h3>
                                             <div className="mt-2 space-y-1">
                                                 <div className="flex items-center text-sm text-gray-600">
-                                                    <Calendar className="w-4 h-4 mr-2" />
+                                                    <span className="mr-2">📅</span>
                                                     {format(new Date(obs.effective_datetime), 'MMMM d, yyyy')}
                                                 </div>
                                                 {obs.value_quantity && (
@@ -77,7 +76,7 @@ export default function Records() {
                                             {obs.status}
                                         </span>
                                         <div className="flex items-center text-xs text-gray-500">
-                                            <Shield className="w-3 h-3 mr-1 text-green-600" />
+                                            <span className="mr-1 text-green-600">🛡️</span>
                                             Blockchain Verified
                                         </div>
                                     </div>
@@ -105,7 +104,7 @@ export default function Records() {
                     </div>
                 ) : (
                     <div className="text-center py-16">
-                        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <div className="text-6xl mb-4">📄</div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">
                             No Medical Records
                         </h3>
@@ -140,7 +139,7 @@ export default function Records() {
                             </div>
                             <button
                                 onClick={() => setSelectedRecord(null)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
                             >
                                 ✕
                             </button>
@@ -190,7 +189,7 @@ export default function Records() {
                                     </div>
                                     {selectedRecord.hash_verified && (
                                         <div className="flex items-center text-sm text-green-600 mt-2">
-                                            <Shield className="w-4 h-4 mr-2" />
+                                            <span className="mr-2">🛡️</span>
                                             Data integrity verified on blockchain
                                         </div>
                                     )}
@@ -201,7 +200,7 @@ export default function Records() {
                         <div className="mt-6 flex justify-end">
                             <button
                                 onClick={() => setSelectedRecord(null)}
-                                className="btn btn-secondary px-4 py-2"
+                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700"
                             >
                                 Close
                             </button>

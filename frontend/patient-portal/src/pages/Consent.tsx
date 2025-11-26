@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiService } from '../services/api'
-import { Shield, Plus, X, Calendar, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 
@@ -59,7 +58,7 @@ export default function Consent() {
                     onClick={() => setShowGrantForm(true)}
                     className="btn btn-primary px-4 py-2 flex items-center"
                 >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <span className="mr-2">➕</span>
                     Grant Consent
                 </button>
             </div>
@@ -67,7 +66,7 @@ export default function Consent() {
             {/* Info Banner */}
             <div className="card p-4 bg-blue-50 border-blue-200">
                 <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-blue-600 mt-0.5">⚠️</span>
                     <div className="text-sm text-blue-800">
                         <p className="font-medium">Blockchain-Powered Consent</p>
                         <p className="mt-1">
@@ -97,7 +96,7 @@ export default function Consent() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-4 flex-1">
                                         <div className="bg-green-100 p-3 rounded-lg">
-                                            <Shield className="w-6 h-6 text-green-600" />
+                                            <span className="text-2xl">🛡️</span>
                                         </div>
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-gray-900">
@@ -111,11 +110,11 @@ export default function Consent() {
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center text-gray-600">
-                                                    <Calendar className="w-4 h-4 mr-2" />
+                                                    <span className="mr-2">📅</span>
                                                     Granted: {format(new Date(consent.granted_at), 'MMM d, yyyy')}
                                                 </div>
                                                 <div className="flex items-center text-gray-600">
-                                                    <Calendar className="w-4 h-4 mr-2" />
+                                                    <span className="mr-2">📅</span>
                                                     Expires: {format(new Date(consent.expires_at), 'MMM d, yyyy')}
                                                 </div>
                                             </div>
@@ -157,7 +156,7 @@ export default function Consent() {
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <div className="text-6xl mb-4">🛡️</div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">
                             No Active Consents
                         </h3>
@@ -182,9 +181,9 @@ export default function Consent() {
                             <h2 className="text-2xl font-bold text-gray-900">Grant Consent</h2>
                             <button
                                 onClick={() => setShowGrantForm(false)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
                             >
-                                <X className="w-6 h-6" />
+                                ✖️
                             </button>
                         </div>
 

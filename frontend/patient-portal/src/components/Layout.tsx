@@ -1,16 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCardanoWallet } from '../hooks/useCardanoWallet'
-import {
-    Activity,
-    FileText,
-    Shield,
-    User,
-    LogOut,
-    Wallet,
-    Menu,
-    X
-} from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function Layout() {
@@ -32,11 +22,11 @@ export default function Layout() {
     }, [isAuthenticated, navigate])
 
     const navigation = [
-        { name: 'Dashboard', href: '/', icon: Activity },
-        { name: 'Medical Records', href: '/records', icon: FileText },
-        { name: 'Consent Management', href: '/consent', icon: Shield },
-        { name: 'Access Log', href: '/access-log', icon: FileText },
-        { name: 'Profile', href: '/profile', icon: User },
+        { name: 'Dashboard', href: '/', icon: '💓' },
+        { name: 'Medical Records', href: '/records', icon: '📄' },
+        { name: 'Consent Management', href: '/consent', icon: '🛡️' },
+        { name: 'Access Log', href: '/access-log', icon: '👁️' },
+        { name: 'Profile', href: '/profile', icon: '👤' },
     ]
 
     return (
@@ -48,7 +38,7 @@ export default function Layout() {
                         {/* Logo */}
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <h1 className="text-2xl font-bold text-primary-600">MEDBLOCK</h1>
+                                <h1 className="text-2xl font-bold text-blue-600">MEDBLOCK</h1>
                                 <p className="text-xs text-gray-500">Patient Portal</p>
                             </div>
                         </div>
@@ -59,9 +49,9 @@ export default function Layout() {
                                 <Link
                                     key={item.name}
                                     to={item.href}
-                                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
+                                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                                 >
-                                    <item.icon className="w-4 h-4 mr-2" />
+                                    <span className="mr-2">{item.icon}</span>
                                     {item.name}
                                 </Link>
                             ))}
@@ -71,7 +61,7 @@ export default function Layout() {
                         <div className="hidden md:flex items-center space-x-4">
                             {walletState.connected && (
                                 <div className="flex items-center space-x-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200">
-                                    <Wallet className="w-4 h-4 text-green-600" />
+                                    <span className="text-green-600">💳</span>
                                     <span className="text-sm font-medium text-green-700">
                                         {walletState.balance}
                                     </span>
@@ -89,7 +79,7 @@ export default function Layout() {
                                 onClick={handleLogout}
                                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition-colors"
                             >
-                                <LogOut className="w-4 h-4 mr-2" />
+                                <span className="mr-2">🚪</span>
                                 Logout
                             </button>
                         </div>
@@ -98,12 +88,12 @@ export default function Layout() {
                         <div className="md:hidden">
                             <button
                                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100"
+                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
                             >
                                 {mobileMenuOpen ? (
-                                    <X className="w-6 h-6" />
+                                    <span>✖️</span>
                                 ) : (
-                                    <Menu className="w-6 h-6" />
+                                    <span>☰</span>
                                 )}
                             </button>
                         </div>
@@ -119,9 +109,9 @@ export default function Layout() {
                                     key={item.name}
                                     to={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50"
+                                    className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                                 >
-                                    <item.icon className="w-5 h-5 mr-3" />
+                                    <span className="mr-3">{item.icon}</span>
                                     {item.name}
                                 </Link>
                             ))}
@@ -129,7 +119,7 @@ export default function Layout() {
                                 onClick={handleLogout}
                                 className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
                             >
-                                <LogOut className="w-5 h-5 mr-3" />
+                                <span className="mr-3">🚪</span>
                                 Logout
                             </button>
                         </div>

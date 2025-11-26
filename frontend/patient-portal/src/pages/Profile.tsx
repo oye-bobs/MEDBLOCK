@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiService } from '../services/api'
-import { User, Mail, Phone, Calendar, Shield } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function Profile() {
@@ -29,7 +28,7 @@ export default function Profile() {
             <div className="card p-6">
                 <div className="flex items-start space-x-6">
                     <div className="bg-primary-100 p-4 rounded-full">
-                        <User className="w-12 h-12 text-primary-600" />
+                        <span className="text-4xl">👤</span>
                     </div>
                     <div className="flex-1">
                         <h2 className="text-2xl font-bold text-gray-900">
@@ -38,7 +37,7 @@ export default function Profile() {
                         <p className="text-gray-600 mt-1 capitalize">{profile?.gender}</p>
                         {profile?.birth_date && (
                             <p className="text-gray-600 flex items-center mt-2">
-                                <Calendar className="w-4 h-4 mr-2" />
+                                <span className="mr-2">📅</span>
                                 Born: {format(new Date(profile.birth_date), 'MMMM d, yyyy')}
                             </p>
                         )}
@@ -49,7 +48,7 @@ export default function Profile() {
             {/* DID Information */}
             <div className="card p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                    <Shield className="w-5 h-5 mr-2 text-primary-600" />
+                    <span className="mr-2 text-primary-600">🛡️</span>
                     Decentralized Identity
                 </h3>
                 <div className="space-y-3">
@@ -78,9 +77,9 @@ export default function Profile() {
                         {profile.telecom.map((contact: any, index: number) => (
                             <div key={index} className="flex items-center space-x-3">
                                 {contact.system === 'email' ? (
-                                    <Mail className="w-5 h-5 text-gray-400" />
+                                    <span className="text-xl">📧</span>
                                 ) : (
-                                    <Phone className="w-5 h-5 text-gray-400" />
+                                    <span className="text-xl">📱</span>
                                 )}
                                 <div>
                                     <p className="text-sm text-gray-500 capitalize">{contact.system}</p>

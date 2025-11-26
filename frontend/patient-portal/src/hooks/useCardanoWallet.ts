@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useWallet } from '@meshsdk/react'
 import type { WalletState } from '../types'
 
+// Mock wallet hook for demo purposes
 export function useCardanoWallet() {
-    const { wallet, connected, connecting, connect, disconnect, name } = useWallet()
+    const [connected, setConnected] = useState(false)
+    const [connecting, setConnecting] = useState(false)
+    const [walletName, setWalletName] = useState<string | null>(null)
     const [walletState, setWalletState] = useState<WalletState>({
         connected: false,
         address: null,
@@ -11,71 +13,45 @@ export function useCardanoWallet() {
         balance: null,
     })
 
-    useEffect(() => {
-        if (connected && wallet) {
-            loadWalletInfo()
-        } else {
-            setWalletState({
-                connected: false,
-                address: null,
-                network: null,
-                balance: null,
-            })
-        }
-    }, [connected, wallet])
+    const connect = async () => {
+        setConnecting(true)
+        // Simulate connection delay
+        await new Promise(resolve => setTimeout(resolve, 1000))
 
-    const loadWalletInfo = async () => {
-        if (!wallet) return
+        setConnected(true)
+        setWalletName('Nami')
+        setWalletState({
+            connected: true,
+            address: 'addr_test1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3UQ...',
+            network: 'testnet',
+            balance: '150.00 ADA',
+        })
+        setConnecting(false)
+    }
 
-        try {
-            const addresses = await wallet.getUsedAddresses()
-            const address = addresses[0] || null
-
-            const networkId = await wallet.getNetworkId()
-            const network = networkId === 0 ? 'testnet' : 'mainnet'
-
-            const balanceValue = await wallet.getBalance()
-            const balance = balanceValue ? formatAda(balanceValue) : null
-
-            setWalletState({
-                connected: true,
-                address,
-                network,
-                balance,
-            })
-        } catch (error) {
-            console.error('Error loading wallet info:', error)
-        }
+    const disconnect = () => {
+        setConnected(false)
+        setWalletName(null)
+        setWalletState({
+            connected: false,
+            address: null,
+            network: null,
+            balance: null,
+        })
     }
 
     const signMessage = async (message: string): Promise<string | null> => {
-        if (!wallet || !connected) {
-            throw new Error('Wallet not connected')
-        }
-
-        try {
-            const addresses = await wallet.getUsedAddresses()
-            const address = addresses[0]
-
-            const signature = await wallet.signData(address, message)
-            return signature.signature
-        } catch (error) {
-            console.error('Error signing message:', error)
-            return null
-        }
-    }
-
-    const formatAda = (lovelace: string): string => {
-        const ada = parseInt(lovelace) / 1000000
-        return `${ada.toFixed(2)} ADA`
+        // Simulate signing delay
+        await new Promise(resolve => setTimeout(resolve, 800))
+        return 'mock_signature_for_demo_purposes_only'
     }
 
     return {
-        wallet,
+        wallet: null,
         walletState,
         connected,
         connecting,
-        walletName: name,
+        walletName,
         connect,
         disconnect,
         signMessage,
