@@ -43,7 +43,12 @@ export function useCardanoWallet() {
     const signMessage = async (message: string): Promise<string | null> => {
         // Simulate signing delay
         await new Promise(resolve => setTimeout(resolve, 800))
-        return 'mock_signature_for_demo_purposes_only'
+        // Store the signed message and signature in localStorage to be used by the API client
+        const signature = 'mock_signature_for_demo_purposes_only'
+        localStorage.setItem('message', message)
+        localStorage.setItem('signature', signature)
+        localStorage.setItem('did', 'did:prism:mock_demo_did')
+        return signature
     }
 
     return {

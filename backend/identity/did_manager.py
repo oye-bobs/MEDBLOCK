@@ -95,6 +95,16 @@ class DIDManager:
                 cache.set(f"did_{did}", doc, timeout=3600)
                 return doc
             
+            # Support demo mock DID created by frontend hook
+            if did == 'did:prism:mock_demo_did':
+                doc = {
+                    'did': did,
+                    'public_key': 'pub_key_mock_demo',
+                    'created_at': self._get_current_timestamp(),
+                }
+                cache.set(f"did_{did}", doc, timeout=3600)
+                return doc
+
             return None
             
         except Exception as e:
@@ -128,9 +138,17 @@ class DIDManager:
             # TODO: Implement actual signature verification
             logger.info(f"Verifying signature for DID: {did}")
             
-            # Mock verification
-            return True  # In production, use actual cryptographic verification
-            
+            # Mock verification: accept mock_demo signature and any signature for cached DIDs
+            if did == 'did:prism:mock_demo_did' and signature == 'mock_signature_for_demo_purposes_only':
+                return True
+
+            # If DID doc is cached (created by backend), accept any signature for demo/test
+            cached = cache.get(f"did_{did}")
+            if cached:
+                return True
+
+            return False
+        
         except Exception as e:
             logger.error(f"Error verifying DID signature: {e}")
             return False

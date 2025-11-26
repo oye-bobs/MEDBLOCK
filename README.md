@@ -128,6 +128,52 @@ npm run dev
 
 ---
 
+## 🧪 Frontend Testing (Demo Mode — No Backend Required)
+
+You can run the patient and provider portals locally in demo mode without starting the backend or Docker. This uses the built-in mock data and demo API handlers.
+
+1) Patient portal (port 3000)
+
+```bash
+cd frontend/patient-portal
+# Enable demo mode (already provided in repo):
+# create or verify `.env` contains:
+# VITE_DEMO=true
+# VITE_API_URL=http://localhost:8000/api   # optional when using demo mode
+npm install
+npm run dev
+```
+
+Open: http://localhost:3000
+
+2) Provider portal (port 3001)
+
+```bash
+cd frontend/provider-portal
+# Create `.env` with:
+# VITE_DEMO=true
+# VITE_API_URL=http://localhost:8000/api
+# REACT_APP_API_URL=http://localhost:8000
+npm install
+npm run dev
+```
+
+Open: http://localhost:3001
+
+Notes
+- The patient portal uses `import.meta.env.VITE_DEMO` to switch to mocked API responses. Setting `VITE_DEMO=true` forces demo data from `frontend/patient-portal/src/mock/demoData`.
+- The provider portal `dev` script is configured to run on port 3001. Run it in a separate terminal so the patient portal on port 3000 is not stopped.
+- To change ports temporarily, append `-- --port <port>` to `npm run dev`.
+- If you want the frontend to proxy requests to a running backend, set `VITE_API_URL` (and `REACT_APP_API_URL` for the proxy) to the backend URL and restart the dev server.
+
+Troubleshooting
+- If the app doesn't pick up `.env` changes, stop the dev server and restart it.
+- If a port is in use, run `lsof -i :3000` (mac/linux) or use Task Manager on Windows to free the port, or run on a different port.
+
+This flow lets you test UI flows, consent screens, and mock records without running the Django backend or blockchain services.
+
+---
+
 ## 📊 Use Cases
 
 ### 1. Emergency Room Visit
