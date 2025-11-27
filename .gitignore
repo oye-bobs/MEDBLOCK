@@ -1,0 +1,112 @@
+# Ignore Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+env/
+
+# Ignore Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Ignore environment files
+.env
+.env.local
+.env.*.local
+
+# Ignore database files
+*.db
+*.sqlite3
+# Allow init scripts but ignore dumps
+*dump.sql
+backup*.sql
+
+# Ignore logs
+*.log
+logs/
+*.log.*
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.vs/
+
+# Ignore Docker volumes
+docker-volumes/
+
+# Ignore Cardano node data
+cardano-node-data/
+cardano-node-ipc/
+
+# Ignore build outputs
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Ignore frontend build
+/frontend/*/build/
+/frontend/*/dist/
+/frontend/*/.next/
+
+# Ignore sensitive keys and wallets
+*.skey
+*.vkey
+*.addr
+*.cert
+wallet-keys/
+mnemonics.txt
+
+# Ignore test coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Ignore Plutus/Marlowe build artifacts
+contracts/*/dist-newstyle/
+contracts/*/.stack-work/
+contracts/*/cabal.project.local
+
+# Ignore temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Ignore OS files
+Thumbs.db
+.DS_Store
