@@ -57,13 +57,13 @@ MEDBLOCK is a blockchain-based Electronic Medical Records (EMR) system built on 
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                     Django REST API                       │
+│                     NestJS REST API                       │
 ├──────────────────────────────────────────────────────────┤
 │                                                           │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐ │
 │  │   FHIR      │  │  Blockchain  │  │   Identity     │ │
 │  │   Module    │  │   Client     │  │   (PRISM)      │ │
-│  │             │  │ (PyCardano)  │  │                │ │
+│  │             │  │   (Lucid)    │  │                │ │
 │  └─────────────┘  └──────────────┘  └────────────────┘ │
 │                                                           │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐ │
@@ -328,4 +328,4 @@ Patient Records (Sharded by Patient DID)
 - [Cardano Documentation](https://docs.cardano.org/)
 - [Atala PRISM](https://atalaprism.io/)
 - [FHIR R4 Specification](https://hl7.org/fhir/R4/)
-- [PyCardano Library](https://pycardano.readthedocs.io/)
+- [Lucid Library](https://lucid.spacebudz.io/)

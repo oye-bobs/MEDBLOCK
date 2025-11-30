@@ -10,14 +10,12 @@ Before you begin, ensure you have the following installed:
 
 - **Docker Desktop** (Windows/Mac) or Docker Engine (Linux)
 - **Docker Compose** v2.0+
-- **Node.js** 18+ (for frontend development)
-- **Python** 3.11+ (for backend development)
+- **Node.js** 18+ (for both backend and frontend)
 - **Git** for version control
 
 ### Optional but Recommended
 - **Cardano Wallet** (Nami, Eternl, or Flint browser extension)
 - **Visual Studio Code** with extensions:
-  - Python
   - ESLint
   - Prettier
   - Docker
@@ -34,20 +32,23 @@ cd MEDBLOCK
 ### 2. Configure Environment
 
 ```bash
-# Copy the example environment file
+# Backend Setup
+cd backend-js
 cp .env.example .env
 
 # Edit .env with your configuration
 # At minimum, set these values:
-# - DJANGO_SECRET_KEY (generate with: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
-# - DB_PASSWORD (choose a secure password)
-# - DB_ENCRYPTION_KEY (generate with: python -c "import secrets; print(secrets.token_hex(32))")
+# - DATABASE_PASSWORD (choose a secure password)
+# - JWT_SECRET (generate a strong secret)
+# - ENCRYPTION_KEY (32-byte hex string)
+# - BLOCKFROST_PROJECT_ID (for Cardano integration)
 ```
 
 ### 3. Start Infrastructure with Docker
 
 ```bash
-# Start all services (Cardano node, PostgreSQL, Redis, Backend, Frontends)
+# Start all services (Cardano node, PostgreSQL, Redis)
+cd ..
 docker-compose up -d
 
 # View logs
@@ -63,76 +64,46 @@ docker-compose ps
 docker-compose logs -f cardano-node
 ```
 
-### 4. Initialize Database
-
-```bash
-# Run Django migrations
-docker-compose exec backend python manage.py migrate
-
-# Create superuser for admin panel
-docker-compose exec backend python manage.py createsuperuser
-```
-
 ## Development Workflow
 
-### Backend Development
+### Backend Development (NestJS)
 
-#### Running Locally (without Docker)
+#### Running Locally
 
 ```bash
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+cd backend-js
 
 # Install dependencies
-pip install -r requirements.txt
+npm install
 
-# Set environment variables
-# Windows:
-$env:DJANGO_DEBUG="True"
-$env:DB_HOST="localhost"
-# Mac/Linux:
-export DJANGO_DEBUG=True
-export DB_HOST=localhost
+# Start development server (watch mode)
+npm run start:dev
 
-# Run migrations
-python manage.py migrate
-
-# Start development server
-python manage.py runserver
+# Start in debug mode
+npm run start:debug
 ```
 
 #### Running Tests
 
 ```bash
-# Run all tests
-pytest
+# Run unit tests
+npm test
 
-# Run with coverage
-pytest --cov=. --cov-report=html
+# Run tests with coverage
+npm run test:cov
 
-# Run specific test file
-pytest backend/tests/test_blockchain_integration.py
+# Run e2e tests
+npm run test:e2e
 ```
 
 #### Code Quality
 
 ```bash
-# Format code with Black
-black .
+# Format code with Prettier
+npm run format
 
-# Lint with Flake8
-flake8 .
-
-# Type checking with MyPy
-mypy .
+# Lint with ESLint
+npm run lint
 ```
 
 ### Frontend Development
@@ -153,21 +124,6 @@ npm run build
 
 # Run tests
 npm test
-
-# Run E2E tests
-npm run test:e2e
-```
-
-#### Provider Portal
-
-```bash
-cd frontend/provider-portal
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
 ```
 
 ### Smart Contract Development
@@ -182,9 +138,6 @@ cabal build
 
 # Run tests
 cabal test
-
-# Generate Plutus script
-cabal run generate-script
 ```
 
 #### Marlowe Contracts (Insurance Claims)
@@ -204,14 +157,13 @@ marlowe-cli run simulate --contract insurance_claim.marlowe
 ### Accessing Services
 
 - **Patient Portal**: http://localhost:3000
-- **Provider Portal**: http://localhost:3001
 - **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Django Admin**: http://localhost:8000/admin
+- **API Documentation**: http://localhost:8000/api/docs
 - **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
 
 ### Database Management
+
+The backend uses TypeORM with `synchronize: true` in development, so schema changes are applied automatically when the server starts.
 
 ```bash
 # Access PostgreSQL shell
@@ -226,7 +178,7 @@ docker-compose exec -T postgres psql -U medblock_user medblock_db < backup.sql
 # Reset database (WARNING: deletes all data)
 docker-compose down -v
 docker-compose up -d postgres
-docker-compose exec backend python manage.py migrate
+# Restart backend to re-sync schema
 ```
 
 ### Cardano Node Operations
@@ -242,36 +194,7 @@ docker-compose logs -f cardano-node
 docker-compose restart cardano-node
 ```
 
-### Viewing Logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f backend
-
-# Last 100 lines
-docker-compose logs --tail=100 backend
-```
-
 ## Troubleshooting
-
-### Cardano Node Won't Sync
-
-**Problem**: Node stuck at 0% sync
-
-**Solution**:
-```bash
-# Stop services
-docker-compose down
-
-# Remove node data (will re-sync from scratch)
-docker volume rm medblock_cardano-node-data
-
-# Restart
-docker-compose up -d cardano-node
-```
 
 ### Database Connection Errors
 
@@ -299,72 +222,31 @@ netstat -ano | findstr :8000
 
 # Kill process (replace PID)
 taskkill /PID <PID> /F
-
-# Or change port in docker-compose.yml
-ports:
-  - "8001:8000"  # Use 8001 instead
 ```
 
-### Frontend Build Fails
+### Build Fails
 
-**Problem**: `npm run build` fails with memory error
+**Problem**: `npm run build` fails
 
 **Solution**:
 ```bash
-# Increase Node memory limit
-$env:NODE_OPTIONS="--max-old-space-size=4096"
+# Check for type errors
 npm run build
-```
-
-## Testing
-
-### Unit Tests
-
-```bash
-# Backend
-cd backend
-pytest
-
-# Frontend
-cd frontend/patient-portal
-npm test
-```
-
-### Integration Tests
-
-```bash
-# Test Cardano integration
-pytest backend/tests/test_blockchain_integration.py -v
-
-# Test FHIR resources
-pytest backend/tests/test_fhir_models.py -v
-```
-
-### End-to-End Tests
-
-```bash
-# Patient portal E2E
-cd frontend/patient-portal
-npm run test:e2e
-
-# Provider portal E2E
-cd frontend/provider-portal
-npm run test:e2e
+# Fix reported TypeScript errors
 ```
 
 ## Deployment
 
 ### Production Checklist
 
-- [ ] Set `DJANGO_DEBUG=False` in `.env`
-- [ ] Generate new `DJANGO_SECRET_KEY`
+- [ ] Set `NODE_ENV=production`
+- [ ] Disable `synchronize: true` in TypeORM config
 - [ ] Use strong database passwords
 - [ ] Enable HTTPS/SSL
 - [ ] Configure firewall rules
 - [ ] Set up database backups
-- [ ] Configure monitoring (Prometheus/Grafana)
-- [ ] Audit smart contracts
-- [ ] Switch to Cardano mainnet (update `.env`)
+- [ ] Configure monitoring
+- [ ] Switch to Cardano mainnet
 
 ### Docker Production Build
 
@@ -379,15 +261,14 @@ docker-compose -f docker-compose.prod.yml up -d
 ## Additional Resources
 
 - [MEDBLOCK Architecture](docs/ARCHITECTURE.md)
-- [API Documentation](http://localhost:8000/docs)
+- [API Documentation](http://localhost:8000/api/docs)
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [Lucid Documentation](https://lucid.spacebudz.io/)
 - [Cardano Developer Portal](https://developers.cardano.org/)
-- [FHIR R4 Specification](https://hl7.org/fhir/R4/)
-- [PyCardano Documentation](https://pycardano.readthedocs.io/)
 
 ## Getting Help
 
 - **Issues**: Report bugs on GitHub Issues
-- **Discussions**: Join our Discord/Slack channel
 - **Documentation**: Check `/docs` directory
 
 ## Contributing

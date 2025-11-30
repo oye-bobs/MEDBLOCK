@@ -44,7 +44,7 @@ Nigeria's healthcare system faces critical challenges:
 | **Blockchain** | Cardano (Preprod) | Record hashes, consent, audit trail |
 | **Smart Contracts** | Plutus + Marlowe | Consent management, claims automation |
 | **Identity** | Atala PRISM | Self-sovereign DIDs (linked to NIN) |
-| **Backend** | Django + PyCardano | REST API, business logic |
+| **Backend** | NestJS + Lucid | REST API, business logic |
 | **Database** | PostgreSQL | Encrypted off-chain medical records |
 | **Standard** | FHIR R4 | Interoperability across providers |
 | **Frontend** | React + TypeScript | Patient & provider portals |
@@ -89,34 +89,35 @@ Nigeria's healthcare system faces critical challenges:
 ### Prerequisites
 - Docker Desktop
 - Node.js 18+
-- Python 3.11+
 - Cardano wallet (Nami/Eternl) for testing
 
 ### 1. Setup
 ```bash
 git clone <repository-url>
 cd MEDBLOCK
+# Backend setup
+cd backend-js
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
 ### 2. Start Infrastructure
 ```bash
+cd ..
 docker-compose up -d
 # Wait for Cardano node to sync (may take hours on first run)
 ```
 
 ### 3. Run Backend
 ```bash
-cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+cd backend-js
+npm install
+npm run start:dev
 ```
 
 ### 4. Run Patient Portal
 ```bash
-cd frontend/patient-portal
+cd ../frontend/patient-portal
 npm install
 npm run dev
 ```
@@ -125,52 +126,6 @@ npm run dev
 - **Patient Portal**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/api/docs
-
----
-
-## 🧪 Frontend Testing (Demo Mode — No Backend Required)
-
-You can run the patient and provider portals locally in demo mode without starting the backend or Docker. This uses the built-in mock data and demo API handlers.
-
-1) Patient portal (port 3000)
-
-```bash
-cd frontend/patient-portal
-# Enable demo mode (already provided in repo):
-# create or verify `.env` contains:
-# VITE_DEMO=true
-# VITE_API_URL=http://localhost:8000/api   # optional when using demo mode
-npm install
-npm run dev
-```
-
-Open: http://localhost:3000
-
-2) Provider portal (port 3001)
-
-```bash
-cd frontend/provider-portal
-# Create `.env` with:
-# VITE_DEMO=true
-# VITE_API_URL=http://localhost:8000/api
-# REACT_APP_API_URL=http://localhost:8000
-npm install
-npm run dev
-```
-
-Open: http://localhost:3001
-
-Notes
-- The patient portal uses `import.meta.env.VITE_DEMO` to switch to mocked API responses. Setting `VITE_DEMO=true` forces demo data from `frontend/patient-portal/src/mock/demoData`.
-- The provider portal `dev` script is configured to run on port 3001. Run it in a separate terminal so the patient portal on port 3000 is not stopped.
-- To change ports temporarily, append `-- --port <port>` to `npm run dev`.
-- If you want the frontend to proxy requests to a running backend, set `VITE_API_URL` (and `REACT_APP_API_URL` for the proxy) to the backend URL and restart the dev server.
-
-Troubleshooting
-- If the app doesn't pick up `.env` changes, stop the dev server and restart it.
-- If a port is in use, run `lsof -i :3000` (mac/linux) or use Task Manager on Windows to free the port, or run on a different port.
-
-This flow lets you test UI flows, consent screens, and mock records without running the Django backend or blockchain services.
 
 ---
 
@@ -208,12 +163,14 @@ Rural Sokoto patient → Lagos specialist via video → Complete medical history
 
 ```
 MEDBLOCK/
-├── backend/                    # Django REST API
-│   ├── api/                   # Endpoints (records, consent, identity)
-│   ├── blockchain/            # Cardano client (PyCardano)
-│   ├── fhir/                  # FHIR R4 models
-│   ├── identity/              # Atala PRISM DID management
-│   └── core/                  # Encryption, utilities
+├── backend-js/                 # NestJS REST API
+│   ├── src/
+│   │   ├── blockchain/        # Cardano client (Lucid)
+│   │   ├── database/          # TypeORM entities
+│   │   ├── identity/          # DID management
+│   │   ├── records/           # Medical records (FHIR)
+│   │   ├── consent/           # Consent management
+│   │   └── encryption/        # AES-256 service
 ├── frontend/
 │   ├── patient-portal/        # React patient app
 │   └── provider-portal/       # React provider app (planned)
@@ -247,14 +204,14 @@ Comprehensive documentation available in [`/docs`](./docs/):
 
 ## 📈 Current Status
 
-**Implementation: ~35-40% Complete**
+**Implementation: ~40% Complete**
 
 ### ✅ Production-Ready
 - Blockchain core (Cardano integration, hashing, verification)
 - FHIR R4 compliant data models
 - AES-256 encryption
 - Immutable audit trail
-- Django REST API
+- NestJS REST API
 - Docker infrastructure
 
 ### ⚠️ In Progress
