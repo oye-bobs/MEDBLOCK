@@ -1,0 +1,69 @@
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    OneToMany,
+    Index,
+} from 'typeorm';
+import { Observation } from './observation.entity';
+import { DiagnosticReport } from './diagnostic-report.entity';
+import { MedicationRequest } from './medication-request.entity';
+import { Encounter } from './encounter.entity';
+import { ConsentRecord } from './consent-record.entity';
+
+@Entity('fhir_practitioner')
+@Index(['did'])
+export class Practitioner {
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
+
+    @Column({ unique: true, length: 255 })
+    @Index()
+    did: string;
+
+    @Column('jsonb')
+    name: any;
+
+    @Column({ length: 20, nullable: true })
+    gender: string;
+
+    @Column({ type: 'date', nullable: true })
+    birthDate: Date;
+
+    @Column('jsonb', { default: [] })
+    qualification: any[];
+
+    @Column('jsonb', { nullable: true })
+    telecom: any;
+
+    @Column({ type: 'boolean', default: true })
+    active: boolean;
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
+
+    // Relations
+    @OneToMany(() => Observation, (observation) => observation.practitioner)
+    observations: Observation[];
+
+    @OneToMany(() => DiagnosticReport, (report) => report.practitioner)
+    diagnosticReports: DiagnosticReport[];
+
+    @OneToMany(() => MedicationRequest, (medication) => medication.practitioner)
+    medicationRequests: MedicationRequest[];
+
+    @OneToMany(() => Encounter, (encounter) => encounter.practitioner)
+    encounters: Encounter[];
+
+    @OneToMany(() => ConsentRecord, (consent) => consent.practitioner)
+    consentsReceived: ConsentRecord[];
+
+    toString(): string {
+        return `Practitioner ${this.id} - DID: ${this.did}`;
+    }
+}
