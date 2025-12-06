@@ -93,4 +93,60 @@ export class CardanoService implements OnModuleInit {
             return false;
         }
     }
+
+    private async getDidPolicy(): Promise<{ type: string; script: string }> {
+        try {
+            const fs = await import('fs/promises');
+            const path = await import('path');
+            const plutusJsonPath = path.join(process.cwd(), 'aiken', 'plutus.json');
+
+            const content = await fs.readFile(plutusJsonPath, 'utf-8');
+            const plutusJson = JSON.parse(content);
+
+            const validator = plutusJson.validators.find((v: any) => v.title === 'did_policy.did_policy');
+
+            if (!validator) {
+                throw new Error('DID policy validator not found in plutus.json');
+            }
+
+            return {
+                type: 'PlutusV2',
+                script: validator.compiledCode,
+            };
+        } catch (error) {
+            this.logger.error('Failed to load DID policy', error);
+            throw new Error('Could not load Aiken contract. Please run "aiken build" in the aiken directory.');
+        }
+    }
+
+    async mintDid(ownerPublicKeyHash: string): Promise<{ txHash: string; did: string }> {
+        try {
+            if (!this.lucid) throw new Error('Lucid not initialized');
+
+            const policy = await this.getDidPolicy();
+            const policyId = this.lucid.utils.mintingPolicyToId(policy);
+            const assetName = this.lucid.utils.fromText('DID'); // Simple asset name
+            const unit = policyId + assetName;
+
+            // Address to receive the DID token
+            const address = await this.lucid.wallet.address();
+
+            const tx = await this.lucid
+                .newTx()
+                .mintAssets({ [unit]: 1n }, "0") // Mint 1 DID token. Data "0" is void redeemer for now
+                .attachMintingPolicy(policy)
+                .addSignerKey(ownerPublicKeyHash) // Ensure owner signs it (as required by policy)
+                .payToAddress(address, { [unit]: 1n })
+                .complete();
+
+            const signedTx = await tx.sign().complete();
+            const txHash = await signedTx.submit();
+
+            this.logger.log(`DID minted. Tx: ${txHash}, PolicyID: ${policyId}`);
+            return { txHash, did: `did:cardano:${policyId}` };
+        } catch (error) {
+            this.logger.error(`Failed to mint DID: ${error.message}`);
+            throw error;
+        }
+    }
 }

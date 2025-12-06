@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCardanoWallet } from '../hooks/useCardanoWallet'
 import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
 
 export default function Register() {
-    const { connect, connected, walletName, signMessage } = useCardanoWallet()
+    const { connect, disconnect, walletName, signMessage, wallets, connected, walletState, lastRawAddress, lastNormalizedAddress, lastSignError } = useCardanoWallet()
     const { login } = useAuth()
     const navigate = useNavigate()
 
@@ -20,14 +20,30 @@ export default function Register() {
         phone: '',
     })
 
-    const handleConnectWallet = async () => {
+    // Auto-advance if already connected (handles plugin injection delays)
+    useEffect(() => {
+        // Some wallets set `connected` quickly but wallet details may arrive slightly later
+        const isReady = !!connected || !!walletState?.connected
+        if (isReady) {
+            setStep('form')
+        }
+    }, [connected, walletState])
+
+    const handleConnectWallet = async (walletName: string) => {
         try {
             setError(null)
-            await connect()
-            setStep('form')
+            console.log('Connecting to:', walletName)
+            await connect(walletName)
+            // The useEffect will handle the step change when connected becomes true
         } catch (err: any) {
+            console.error('Connection error:', err)
             setError(err.message || 'Failed to connect wallet')
         }
+    }
+
+    const handleDisconnect = async () => {
+        await disconnect()
+        setStep('connect')
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -57,12 +73,9 @@ export default function Register() {
             localStorage.setItem('private_key', result.private_key)
 
             // Sign a message to authenticate
+            // Sign a message to authenticate
             const message = `MEDBLOCK authentication: ${Date.now()}`
             const signature = await signMessage(message)
-
-            if (!signature) {
-                throw new Error('Failed to sign authentication message')
-            }
 
             // Login with DID
             login(result.did, result.patient_id, signature, message)
@@ -105,15 +118,57 @@ export default function Register() {
                                 </div>
                             )}
 
-                            <button
-                                onClick={handleConnectWallet}
-                                className="w-full bg-blue-600 text-white rounded-lg px-6 py-3 text-lg font-semibold hover:bg-blue-700 transition-colors"
-                            >
-                                Connect Wallet
-                            </button>
+                            <div className="space-y-3">
+                                {[
+                                    { name: 'nami', label: 'Nami', url: 'https://namiwallet.io' },
+                                    { name: 'eternl', label: 'Eternl', url: 'https://eternl.io' },
+                                    { name: 'flint', label: 'Flint', url: 'https://flint-wallet.com' },
+                                    { name: 'lace', label: 'Lace', url: 'https://www.lace.io' },
+                                ].map((wallet) => {
+                                    const isInstalled = wallets.some((w: any) => w.name.toLowerCase() === wallet.name)
 
-                            <div className="text-center text-sm text-gray-500">
-                                <p>Supported wallets: Nami, Eternl, Flint</p>
+                                    if (isInstalled) {
+                                        return (
+                                            <button
+                                                key={wallet.name}
+                                                onClick={() => handleConnectWallet(wallet.name)}
+                                                className="w-full flex items-center justify-between bg-white border-2 border-blue-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl">
+                                                        {wallet.name === 'nami' ? '🔷' : wallet.name === 'eternl' ? '⚡' : wallet.name === 'lace' ? '🧶' : '🔥'}
+                                                    </span>
+                                                    <span className="text-lg font-semibold group-hover:text-blue-600">
+                                                        Connect {wallet.label}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        )
+                                    }
+
+                                    return (
+                                        <a
+                                            key={wallet.name}
+                                            href={wallet.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full flex items-center justify-between bg-white border-2 border-gray-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                                                    {wallet.name === 'nami' ? '🔷' : wallet.name === 'eternl' ? '⚡' : wallet.name === 'lace' ? '🧶' : '🔥'}
+                                                </span>
+                                                <span className="text-lg font-semibold group-hover:text-blue-600">
+                                                    {wallet.label}
+                                                </span>
+                                            </div>
+
+                                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                                Install
+                                            </span>
+                                        </a>
+                                    )
+                                })}
                             </div>
                         </div>
                     )}
@@ -125,9 +180,32 @@ export default function Register() {
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                     Create Your Profile
                                 </h2>
-                                <p className="text-sm text-gray-600">
-                                    Wallet connected: {walletName}
-                                </p>
+                                <div className="flex items-center justify-center gap-2">
+                                    <p className="text-sm text-gray-600">
+                                        Wallet connected: <span className="font-semibold capitalize">{walletName}</span>
+                                    </p>
+                                    <button
+                                        onClick={handleDisconnect}
+                                        className="text-xs text-red-500 hover:text-red-700 underline"
+                                    >
+                                        Disconnect
+                                    </button>
+                                </div>
+                                {/* Diagnostic panel: shows raw/normalized address and last signing error */}
+                                <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded">
+                                    <p className="text-xs text-gray-500">Wallet diagnostics</p>
+                                    <div className="text-sm text-gray-700">
+                                        <div><strong>Raw address:</strong> <span className="font-mono text-xs break-words">{lastRawAddress ?? '—'}</span></div>
+                                        <div className="mt-1"><strong>Normalized bech32:</strong> <span className="font-mono text-xs break-words">{lastNormalizedAddress ?? '—'}</span></div>
+                                        {lastSignError && (
+                                            <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded text-red-700 text-xs">
+                                                <div><strong>Error:</strong> {String(lastSignError?.error?.message ?? lastSignError?.error ?? lastSignError)}</div>
+                                                {lastSignError?.raw && <div className="mt-1 text-xxs"><strong>raw:</strong> <span className="font-mono break-words">{String(lastSignError.raw)}</span></div>}
+                                                {lastSignError?.sanitized && <div className="mt-1 text-xxs"><strong>sanitized:</strong> <span className="font-mono break-words">{String(lastSignError.sanitized)}</span></div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             {error && (

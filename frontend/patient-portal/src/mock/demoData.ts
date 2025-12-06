@@ -38,7 +38,7 @@ let observations = [
   }
 ]
 
-let consents = []
+let consents: any[] = []
 
 function createPatientDID(data: any) {
   // return a clone with provided fields merged
@@ -124,7 +124,7 @@ function getActiveConsents() {
   return Promise.resolve(consents.filter(c => c.status === 'active'))
 }
 
-function getAccessLog(patientDid: string) {
+function getAccessLog(_patientDid: string) {
   // return recent mock access log entries
   return Promise.resolve([
     { accessor_did: 'did:prism:provider_demo_1', action: 'read', resource_type: 'Observation', resource_id: observations[0].id, timestamp: new Date().toISOString(), blockchain_tx_id: 'mock_access_tx_1' }

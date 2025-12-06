@@ -1,8 +1,8 @@
 import axios, { AxiosInstance } from 'axios'
 import demoData from '../mock/demoData'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-const IS_DEMO = (import.meta.env.VITE_DEMO || 'false') === 'true'
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000/api'
+const IS_DEMO = ((import.meta as any).env.VITE_DEMO || 'false') === 'true'
 
 class ApiService {
     private client: AxiosInstance
