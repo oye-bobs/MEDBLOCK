@@ -78,8 +78,8 @@ This folder contains comprehensive documentation for the MEDBLOCK blockchain-bas
 - Infrastructure setup (✅ Complete)
 - Backend development (✅ Complete)
 - Frontend development (✅ Complete)
-- Testing & verification (⚠️ In Progress)
-- Smart contract development (⏳ Pending)
+- Testing & verification (⚠️ pending)
+- Smart contract development (⏳ In progress)
 - Deployment (⏳ Pending)
 
 **Audience:** Development team, project managers
@@ -105,7 +105,7 @@ This folder contains comprehensive documentation for the MEDBLOCK blockchain-bas
 
 - Prerequisites and setup
 - Local development workflow
-- Backend development (Node)
+- Backend development (Express)
 - Frontend development (React)
 - Smart contract development (Plutus/Marlowe)
 - Testing procedures
@@ -150,7 +150,7 @@ This folder contains comprehensive documentation for the MEDBLOCK blockchain-bas
 - ✅ FHIR R4 compliant data models
 - ✅ Encryption (AES-256)
 - ✅ Audit trail (immutable access logs)
-- ✅ Backend API (Django REST)
+- ✅ Backend API (Express )
 - ✅ Infrastructure (Docker Compose)
 
 **In Development:**
