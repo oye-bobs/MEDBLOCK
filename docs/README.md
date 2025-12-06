@@ -12,7 +12,7 @@ This folder contains comprehensive documentation for the MEDBLOCK blockchain-bas
 **Technical Architecture & Development Roadmap**
 
 - System architecture (hybrid on-chain/off-chain)
-- Technology stack (Cardano, Node, React, FHIR)
+- Technology stack (Cardano, Express, React, FHIR)
 - Smart contract design (Plutus consent, Marlowe claims)
 - Database schema
 - Security architecture
