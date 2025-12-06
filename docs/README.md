@@ -105,7 +105,7 @@ This folder contains comprehensive documentation for the MEDBLOCK blockchain-bas
 
 - Prerequisites and setup
 - Local development workflow
-- Backend development (Django)
+- Backend development (Node)
 - Frontend development (React)
 - Smart contract development (Plutus/Marlowe)
 - Testing procedures
