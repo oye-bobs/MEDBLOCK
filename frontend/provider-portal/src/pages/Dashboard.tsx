@@ -1,123 +1,171 @@
-import { useContext } from 'react'
-import { Link } from 'react-router-dom'
-import { AuthContext } from '../App'
+import { motion } from 'framer-motion'
+import {
+    Users,
+    FileText,
+    Activity,
+    TrendingUp,
+    Clock,
+    AlertCircle,
+    ChevronRight,
+    CheckCircle
+} from 'lucide-react'
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+}
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100
+        }
+    }
+}
 
 export default function Dashboard() {
-    const { providerName, providerDID, logout } = useContext(AuthContext)
-
+    // Mock Data
     const stats = [
-        { label: 'Patients Seen Today', value: '12', icon: '👥', color: 'bg-blue-500' },
-        { label: 'Records Created', value: '8', icon: '📄', color: 'bg-green-500' },
-        { label: 'Pending Consents', value: '3', icon: '⏳', color: 'bg-yellow-500' },
+        { title: 'Active Patients', value: '1,234', change: '+12%', icon: Users, color: 'bg-blue-500' },
+        { title: 'Records Uploaded', value: '856', change: '+5%', icon: FileText, color: 'bg-green-500' },
+        { title: 'Pending Requests', value: '23', change: '-2%', icon: Clock, color: 'bg-amber-500' },
+        { title: 'Interoperability', value: '145', change: '+18%', icon: Activity, color: 'bg-purple-500' },
     ]
 
-    const recentPatients = [
-        { name: 'Adebayo Okonkwo', did: 'did:prism:ng:abc123', lastVisit: '2 hours ago', status: 'Active' },
-        { name: 'Chioma Nwosu', did: 'did:prism:ng:def456', lastVisit: '5 hours ago', status: 'Active' },
-        { name: 'Ibrahim Mohammed', did: 'did:prism:ng:ghi789', lastVisit: '1 day ago', status: 'Completed' },
+    const recentActivity = [
+        { id: 1, type: 'upload', patient: 'John Doe', detail: 'Blood Test Results', time: '10 mins ago', status: 'success' },
+        { id: 2, type: 'access', patient: 'Sarah Smith', detail: 'Viewed Medical History', time: '45 mins ago', status: 'success' },
+        { id: 3, type: 'request', patient: 'Michael Brown', detail: 'Consent Request Sent', time: '2 hours ago', status: 'pending' },
+        { id: 4, type: 'upload', patient: 'Emily Davis', detail: 'X-Ray Imaging', time: '4 hours ago', status: 'success' },
     ]
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center">
-                            <span className="text-2xl mr-3">🏥</span>
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900">MEDBLOCK Provider Portal</h1>
-                                <p className="text-xs text-gray-500">Healthcare Provider Dashboard</p>
-                            </div>
-                        </div>
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+        >
+            {/* Welcome Section */}
+            <motion.div variants={itemVariants} className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+                <div className="relative z-10">
+                    <h1 className="text-3xl font-bold mb-2">Provider Dashboard</h1>
+                    <p className="text-blue-100">Welcome back, Dr. Adebayo. Here's what's happening today.</p>
+                </div>
+                <div className="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-bottom-left" />
+            </motion.div>
 
-                        <div className="flex items-center space-x-4">
-                            <div className="text-right">
-                                <p className="text-sm font-medium text-gray-900">{providerName}</p>
-                                <p className="text-xs text-gray-500 truncate max-w-[200px]">{providerDID}</p>
+            {/* Stats Grid */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {stats.map((stat, index) => (
+                    <motion.div
+                        key={index}
+                        variants={itemVariants}
+                        className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm p-6 hover:shadow-md transition-shadow"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10`}>
+                                <stat.icon className={`w-6 h-6 ${stat.color.replace('bg-', 'text-')}`} />
                             </div>
-                            <button
-                                onClick={logout}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                            <span className={`text-sm font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                                {stat.change}
+                            </span>
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
+                        <p className="text-sm text-gray-500">{stat.title}</p>
+                    </motion.div>
+                ))}
+            </motion.div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Recent Activity */}
+                <motion.div variants={itemVariants} className="lg:col-span-2 h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</button>
+                    </div>
+                    <div className="space-y-4">
+                        {recentActivity.map((activity) => (
+                            <motion.div
+                                key={activity.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                             >
-                                <span className="mr-2">🚪</span>
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {stats.map((stat, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow p-6">
-                            <div className="flex items-center">
-                                <div className={`${stat.color} p-3 rounded-lg`}>
-                                    <span className="text-white text-xl">{stat.icon}</span>
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white rounded-lg shadow p-6 mb-8">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Link
-                            to="/patients/search"
-                            className="flex items-center p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
-                        >
-                            <span className="text-3xl mr-4">🔍</span>
-                            <div>
-                                <p className="font-semibold text-gray-900">Search Patients</p>
-                                <p className="text-sm text-gray-600">Find patient by DID or name</p>
-                            </div>
-                        </Link>
-
-                        <div className="flex items-center p-4 border-2 border-gray-200 rounded-lg opacity-50 cursor-not-allowed">
-                            <span className="text-3xl mr-4">📂</span>
-                            <div>
-                                <p className="font-semibold text-gray-600">View All Records</p>
-                                <p className="text-sm text-gray-500">Browse medical records</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Recent Patients */}
-                <div className="bg-white rounded-lg shadow">
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-900">Recent Patients</h2>
-                    </div>
-                    <div className="divide-y divide-gray-200">
-                        {recentPatients.map((patient, index) => (
-                            <div key={index} className="p-6 hover:bg-gray-50">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2 rounded-full ${activity.type === 'upload' ? 'bg-blue-100 text-blue-600' :
+                                        activity.type === 'request' ? 'bg-amber-100 text-amber-600' :
+                                            'bg-green-100 text-green-600'
+                                        }`}>
+                                        {activity.type === 'upload' ? <FileText size={18} /> :
+                                            activity.type === 'request' ? <AlertCircle size={18} /> :
+                                                <CheckCircle size={18} />}
+                                    </div>
                                     <div>
-                                        <p className="font-medium text-gray-900">{patient.name}</p>
-                                        <p className="text-sm text-gray-500">{patient.did}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-gray-600">{patient.lastVisit}</p>
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${patient.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {patient.status}
-                                        </span>
+                                        <p className="font-medium text-gray-900">{activity.patient}</p>
+                                        <p className="text-sm text-gray-500">{activity.detail}</p>
                                     </div>
                                 </div>
-                            </div>
+                                <div className="text-left sm:text-right w-full sm:w-auto">
+                                    <p className="text-xs text-gray-500">{activity.time}</p>
+                                    <span className={`text-xs font-medium ${activity.status === 'success' ? 'text-green-600' : 'text-amber-600'
+                                        }`}>
+                                        {activity.status === 'success' ? 'Completed' : 'Pending'}
+                                    </span>
+                                </div>
+                            </motion.div>
                         ))}
                     </div>
-                </div>
-            </main>
-        </div>
+                </motion.div>
+
+                {/* Quick Actions */}
+                <motion.div variants={itemVariants} className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm p-6">
+                    <h2 className="text-lg font-bold text-gray-900 mb-6">Quick Actions</h2>
+                    <div className="space-y-3">
+                        <button className="w-full flex items-center justify-between p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors group">
+                            <span className="font-medium">Register New Patient</span>
+                            <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                        <button className="w-full flex items-center justify-between p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors group">
+                            <span className="font-medium">Upload Records</span>
+                            <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                        <button className="w-full flex items-center justify-between p-4 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors group">
+                            <span className="font-medium">Request Consent</span>
+                            <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                    </div>
+
+                    {/* Analytics Preview */}
+                    <div className="mt-8">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-4">Patient Volume Trend</h3>
+                        <div className="h-32 flex items-end justify-between gap-2">
+                            {[40, 65, 45, 80, 55, 90, 75].map((h, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${h}%` }}
+                                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                                    className="w-full bg-blue-500 rounded-t-sm"
+                                />
+                            ))}
+                        </div>
+                        <div className="flex justify-between mt-2 text-xs text-gray-400">
+                            <span>Mon</span>
+                            <span>Sun</span>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </motion.div>
     )
 }

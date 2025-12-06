@@ -1,6 +1,10 @@
 import { useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../App'
+import { PORTAL_URLS } from '@medblock/shared'
+import { motion } from 'framer-motion'
+import { Building, User, Lock, Stethoscope, ArrowLeft } from 'lucide-react'
+import BackgroundLayer from '@/components/BackgroundLayer'
 
 export default function Login() {
     const { login } = useContext(AuthContext)
@@ -36,21 +40,40 @@ export default function Login() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center px-4">
-            <div className="max-w-md w-full">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
+        >
+            <BackgroundLayer />
+
+            <div className="max-w-md w-full z-10">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="flex items-center justify-center mb-4">
-                        <div className="text-6xl">🏥</div>
-                    </div>
-                    <h1 className="text-4xl font-bold text-white mb-2">MEDBLOCK</h1>
-                    <p className="text-blue-100">Provider Portal</p>
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
+                        className="flex items-center justify-center mb-4"
+                    >
+                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center shadow-lg">
+                            <Stethoscope size={32} className="text-blue-600" />
+                        </div>
+                    </motion.div>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">MEDBLOCK</h1>
+                    <p className="text-blue-600 font-medium">Provider Portal</p>
                 </div>
 
                 {/* Card */}
-                <div className="bg-white rounded-lg shadow-2xl p-8">
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Healthcare Provider Login</h2>
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50"
+                >
+                    <div className="mb-6 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Provider Login</h2>
                         <p className="text-gray-600 text-sm">
                             Access patient records and manage medical data securely
                         </p>
@@ -58,8 +81,8 @@ export default function Login() {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <span className="mr-2">🏥</span>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                <Building size={16} className="text-blue-600" />
                                 Healthcare Facility
                             </label>
                             <input
@@ -67,14 +90,14 @@ export default function Login() {
                                 required
                                 value={formData.facilityName}
                                 onChange={(e) => setFormData({ ...formData, facilityName: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                 placeholder="e.g., Lagos University Teaching Hospital"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <span className="mr-2">👨‍⚕️</span>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                <User size={16} className="text-blue-600" />
                                 Provider Name
                             </label>
                             <input
@@ -82,14 +105,14 @@ export default function Login() {
                                 required
                                 value={formData.providerName}
                                 onChange={(e) => setFormData({ ...formData, providerName: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                 placeholder="e.g., Dr. Adebayo Okonkwo"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <span className="mr-2">🔒</span>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                <Lock size={16} className="text-blue-600" />
                                 Provider ID
                             </label>
                             <input
@@ -97,51 +120,67 @@ export default function Login() {
                                 required
                                 value={formData.providerID}
                                 onChange={(e) => setFormData({ ...formData, providerID: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                 placeholder="e.g., LUTH001"
                             />
                         </div>
 
                         <button
                             type="submit"
-                            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                         >
                             Login to Provider Portal
                         </button>
                     </form>
 
                     {/* Demo Credentials */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                        <p className="text-sm font-medium text-gray-700 mb-3">Demo Provider Credentials:</p>
+                    <div className="mt-6 pt-6 border-t border-gray-200/60">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Demo Provider Credentials</p>
                         <div className="space-y-2">
                             {demoProviders.map((provider, index) => (
                                 <button
                                     key={index}
                                     onClick={() => fillDemo(provider)}
-                                    className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-blue-50 rounded-xl border border-gray-200 hover:border-blue-200 transition-all group"
                                 >
-                                    <p className="text-sm font-medium text-gray-900">{provider.name}</p>
-                                    <p className="text-xs text-gray-600">{provider.facility}</p>
+                                    <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-700">{provider.name}</p>
+                                    <p className="text-xs text-gray-500 group-hover:text-blue-600">{provider.facility}</p>
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Info */}
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                        <p className="text-xs text-blue-800">
+                    <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                        <p className="text-xs text-blue-800 leading-relaxed">
                             <strong>Demo Mode:</strong> This is a simplified demo. In production, authentication would use DID signatures via Cardano wallet.
                         </p>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Footer */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-blue-100">
+                {/* Footer Links */}
+                <div className="mt-8 text-center space-y-4">
+                    <a href="http://localhost:3000/user-selection" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
+                        <ArrowLeft size={16} /> Back to Role Selection
+                    </a>
+
+                    <div className="pt-2">
+                        <p className="text-sm text-gray-500">
+                            Are you a patient?{' '}
+                            <a
+                                href={PORTAL_URLS.PATIENT}
+                                className="font-medium text-blue-600 hover:text-blue-800 hover:underline transition-all"
+                            >
+                                Go to Patient Portal &rarr;
+                            </a>
+                        </p>
+                    </div>
+
+                    <p className="text-xs text-gray-400 mt-4">
                         Powered by Cardano Blockchain • FHIR R4 Compliant
                     </p>
                 </div>
             </div>
-        </div>
+        </motion.div>
     )
 }

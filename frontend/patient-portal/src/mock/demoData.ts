@@ -38,7 +38,7 @@ let observations = [
   }
 ]
 
-let consents = []
+let consents: any[] = []
 
 function createPatientDID(data: any) {
   // return a clone with provided fields merged

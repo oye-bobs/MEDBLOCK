@@ -1,23 +1,25 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
+import { AuthContext } from '../App'
 import Sidebar from './Sidebar'
-import { Menu } from 'lucide-react'
+import { Menu, Stethoscope } from 'lucide-react'
+import BackgroundLayer from './BackgroundLayer'
 
 export default function Layout() {
-    const { isAuthenticated } = useAuth()
+    const { isAuthenticated } = useContext(AuthContext)
     const navigate = useNavigate()
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [isMobileOpen, setIsMobileOpen] = useState(false)
 
     useEffect(() => {
         if (!isAuthenticated) {
-            navigate('/register')
+            navigate('/login')
         }
     }, [isAuthenticated, navigate])
 
     return (
-        <div className="min-h-screen flex bg-gray-50">
+        <div className="min-h-screen flex">
+            <BackgroundLayer />
             <Sidebar
                 isCollapsed={isCollapsed}
                 onToggle={() => setIsCollapsed(!isCollapsed)}
@@ -39,13 +41,16 @@ export default function Layout() {
                         >
                             <Menu size={24} />
                         </button>
-                        <span className="ml-3 font-bold text-lg text-blue-600">MEDBLOCK</span>
+                        <div className="flex items-center gap-2 ml-3">
+                            <Stethoscope className="text-blue-600" size={24} />
+                            <span className="font-bold text-lg text-blue-600">MEDBLOCK</span>
+                        </div>
                     </div>
                     <div className="w-8" /> {/* Spacer for balance */}
                 </div>
 
                 <div className="flex-1 flex flex-col">
-                    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+                    <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                         <Outlet />
                     </main>
 

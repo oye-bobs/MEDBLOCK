@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiService } from '../services/api'
 import { format } from 'date-fns'
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Shield, Plus, AlertTriangle, Calendar, Clock, CheckCircle, X, FileText, Lock } from 'lucide-react'
+import BackgroundLayer from '../components/BackgroundLayer'
 
 export default function Consent() {
     const queryClient = useQueryClient()
@@ -44,10 +47,39 @@ export default function Consent() {
         }
     }
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    }
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                stiffness: 100
+            }
+        }
+    }
+
     return (
-        <div className="space-y-6 animate-fade-in">
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6 relative"
+        >
+            <BackgroundLayer />
+
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Consent Management</h1>
                     <p className="text-gray-600 mt-1">
@@ -56,206 +88,238 @@ export default function Consent() {
                 </div>
                 <button
                     onClick={() => setShowGrantForm(true)}
-                    className="btn btn-primary px-4 py-2 flex items-center"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
                 >
-                    <span className="mr-2">➕</span>
+                    <Plus size={18} />
                     Grant Consent
                 </button>
-            </div>
+            </motion.div>
 
             {/* Info Banner */}
-            <div className="card p-4 bg-blue-50 border-blue-200">
-                <div className="flex items-start space-x-3">
-                    <span className="text-blue-600 mt-0.5">⚠️</span>
-                    <div className="text-sm text-blue-800">
-                        <p className="font-medium">Blockchain-Powered Consent</p>
-                        <p className="mt-1">
+            <motion.div
+                variants={itemVariants}
+                className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-2xl p-6"
+            >
+                <div className="flex items-start gap-4">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                        <Lock className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-blue-900">Blockchain-Powered Consent</h3>
+                        <p className="mt-1 text-sm text-blue-800/80 leading-relaxed">
                             All consent grants are recorded as smart contracts on the Cardano
                             blockchain. They automatically expire after the specified duration and
                             can be revoked at any time.
                         </p>
                     </div>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Active Consents */}
-            <div className="card p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Active Consents</h2>
+            <motion.div
+                variants={itemVariants}
+                className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 p-6 sm:p-8 min-h-[400px]"
+            >
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <Shield className="text-blue-600" size={20} />
+                    Active Consents
+                </h2>
 
                 {isLoading ? (
-                    <div className="text-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-500 text-sm">Loading consents...</p>
                     </div>
                 ) : consents?.consents?.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="grid gap-4">
                         {consents.consents.map((consent: any) => (
-                            <div
+                            <motion.div
                                 key={consent.id}
-                                className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow"
+                                layout
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md hover:border-blue-200 transition-all group"
                             >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start space-x-4 flex-1">
-                                        <div className="bg-green-100 p-3 rounded-lg">
-                                            <span className="text-2xl">🛡️</span>
+                                <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+                                    <div className="flex items-start gap-4 flex-1">
+                                        <div className="bg-green-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                                            <CheckCircle className="w-6 h-6 text-green-600" />
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-900">
-                                                Provider Access
-                                            </h3>
-                                            <div className="mt-2 space-y-1 text-sm">
+                                        <div className="flex-1 space-y-3">
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-lg">
+                                                    Provider Access
+                                                </h3>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
+                                                    <span className="text-xs text-gray-400">•</span>
+                                                    <span className="text-xs text-gray-500 font-mono">{consent.id.substring(0, 8)}...</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                                 <div>
-                                                    <span className="text-gray-500">Provider DID:</span>
-                                                    <p className="font-mono text-xs text-gray-700 break-all">
+                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Provider DID</span>
+                                                    <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 break-all">
                                                         {consent.provider_did}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center text-gray-600">
-                                                    <span className="mr-2">📅</span>
-                                                    Granted: {format(new Date(consent.granted_at), 'MMM d, yyyy')}
-                                                </div>
-                                                <div className="flex items-center text-gray-600">
-                                                    <span className="mr-2">📅</span>
-                                                    Expires: {format(new Date(consent.expires_at), 'MMM d, yyyy')}
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <Calendar size={14} />
+                                                        <span>Granted: {format(new Date(consent.granted_at), 'MMM d, yyyy')}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <Clock size={14} />
+                                                        <span>Expires: {format(new Date(consent.expires_at), 'MMM d, yyyy')}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end space-y-2">
-                                        <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                                            Active
-                                        </span>
+
+                                    <div className="flex flex-col items-end gap-3 w-full lg:w-auto pl-0 lg:pl-4 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0">
                                         <button
                                             onClick={() => handleRevoke(consent.id)}
                                             disabled={revokeMutation.isPending}
-                                            className="text-sm text-red-600 hover:text-red-700 font-medium"
+                                            className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors w-full lg:w-auto"
                                         >
-                                            Revoke
+                                            Revoke Access
                                         </button>
-                                    </div>
-                                </div>
-
-                                {/* Smart Contract Info */}
-                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                    <div className="text-xs space-y-1">
-                                        <div>
-                                            <span className="text-gray-500">Smart Contract:</span>
-                                            <p className="font-mono text-gray-700 truncate">
+                                        <div className="text-xs text-right space-y-1">
+                                            <p className="text-gray-400">Smart Contract</p>
+                                            <p className="font-mono text-gray-500 text-[10px] break-all max-w-[150px]">
                                                 {consent.smart_contract_address}
                                             </p>
                                         </div>
-                                        <div>
-                                            <span className="text-gray-500">Scope:</span>
-                                            <p className="text-gray-700">
-                                                {consent.scope.join(', ')}
-                                            </p>
-                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-12">
-                        <div className="text-6xl mb-4">🛡️</div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                            <Shield className="w-10 h-10 text-gray-300" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">
                             No Active Consents
                         </h3>
-                        <p className="text-gray-600">
-                            You haven't granted access to any providers yet
+                        <p className="text-gray-500 max-w-sm">
+                            You haven't granted access to any healthcare providers yet. Click "Grant Consent" to get started.
                         </p>
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* Grant Consent Modal */}
-            {showGrantForm && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-                    onClick={() => setShowGrantForm(false)}
-                >
-                    <div
-                        className="bg-white rounded-lg max-w-md w-full p-6"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Grant Consent</h2>
-                            <button
-                                onClick={() => setShowGrantForm(false)}
-                                className="text-gray-400 hover:text-gray-600 text-2xl"
-                            >
-                                ✖️
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleGrant} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Provider DID
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.provider_did}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, provider_did: e.target.value })
-                                    }
-                                    placeholder="did:prism:..."
-                                    className="input w-full"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Enter the decentralized identifier of the healthcare provider
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Duration (hours)
-                                </label>
-                                <select
-                                    value={formData.duration_hours}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            duration_hours: parseInt(e.target.value),
-                                        })
-                                    }
-                                    className="input w-full"
-                                >
-                                    <option value={24}>24 hours</option>
-                                    <option value={72}>72 hours (3 days)</option>
-                                    <option value={168}>1 week</option>
-                                    <option value={720}>30 days</option>
-                                </select>
-                            </div>
-
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                <p className="text-sm text-yellow-800">
-                                    <strong>Note:</strong> This will create a smart contract on the
-                                    Cardano blockchain granting time-bound access to your medical
-                                    records.
-                                </p>
-                            </div>
-
-                            <div className="flex space-x-3">
+            <AnimatePresence>
+                {showGrantForm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setShowGrantForm(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 relative z-10 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Grant Consent</h2>
+                                    <p className="text-gray-500 text-sm mt-1">Authorize a provider to access your records</p>
+                                </div>
                                 <button
-                                    type="button"
                                     onClick={() => setShowGrantForm(false)}
-                                    className="flex-1 btn btn-secondary px-4 py-2"
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={grantMutation.isPending}
-                                    className="flex-1 btn btn-primary px-4 py-2"
-                                >
-                                    {grantMutation.isPending ? 'Granting...' : 'Grant Access'}
+                                    <X size={20} className="text-gray-500" />
                                 </button>
                             </div>
-                        </form>
+
+                            <form onSubmit={handleGrant} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                        Provider DID
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.provider_did}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, provider_did: e.target.value })
+                                        }
+                                        placeholder="did:prism:..."
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-mono text-sm"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                                        <Shield size={12} />
+                                        Enter the decentralized identifier of the healthcare provider
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                        Duration
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { label: '24 Hours', value: 24 },
+                                            { label: '3 Days', value: 72 },
+                                            { label: '1 Week', value: 168 },
+                                            { label: '30 Days', value: 720 }
+                                        ].map((option) => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, duration_hours: option.value })}
+                                                className={`py-2.5 px-4 rounded-xl text-sm font-medium border transition-all ${formData.duration_hours === option.value
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                                    }`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                    <p className="text-sm text-amber-800 leading-relaxed">
+                                        <strong>Note:</strong> This will create a smart contract on the
+                                        Cardano blockchain granting time-bound access to your medical
+                                        records.
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowGrantForm(false)}
+                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={grantMutation.isPending}
+                                        className="flex-1 py-3 px-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        {grantMutation.isPending ? 'Granting...' : 'Grant Access'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     )
 }

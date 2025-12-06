@@ -8,7 +8,10 @@ import Consent from './pages/Consent'
 import AccessLog from './pages/AccessLog'
 import Profile from './pages/Profile'
 import { useAuth, AuthProvider } from './hooks/useAuth'
-
+import BackgroundLayer from './components/BackgroundLayer'
+import LoginPage from './pages/LoginPage'
+import LandingPage from './pages/LandingPage'
+import UserSelection from './pages/UserSelection'
 const queryClient = new QueryClient()
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -22,16 +25,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
     return (
         <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/user-selection" element={<UserSelection />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route
-                path="/"
                 element={
                     <ProtectedRoute>
                         <Layout />
                     </ProtectedRoute>
                 }
             >
-                <Route index element={<Dashboard />} />
+                <Route path='/dashboard' element={<Dashboard />} />
                 <Route path="records" element={<Records />} />
                 <Route path="consent" element={<Consent />} />
                 <Route path="access-log" element={<AccessLog />} />
@@ -45,6 +50,7 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
+                <BackgroundLayer />
                 <AppRoutes />
             </AuthProvider>
         </QueryClientProvider>

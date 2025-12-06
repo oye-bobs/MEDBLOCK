@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "workspaces": [
+    "patient-portal",
+    "provider-portal",
+    "shared"
+  ]
+}
