@@ -343,20 +343,36 @@ export function useCardanoWallet() {
                 // Fallback: Try direct CIP-30 call to bypass Mesh/CSL validation issues
                 try {
                     console.info('Attempting direct CIP-30 signData fallback...')
-                    const api = await window.cardano[name].enable()
-                    const messageHex = Buffer.from(message, 'utf8').toString('hex')
+                    const walletKey = name || ''
+                    // @ts-ignore
+                    if (window.cardano && walletKey && window.cardano[walletKey]) {
+                        // @ts-ignore
+                        const api = await window.cardano[walletKey].enable()
+                        const messageHex = Array.from(new TextEncoder().encode(message))
+                            .map(b => b.toString(16).padStart(2, '0'))
+                            .join('')
 
-                    // Try with the last normalized/hex address we derived
-                    const addrToUse = lastNormalizedAddress ||
-                        (walletState.address ?
-                            Buffer.from(CSLAddress.from_bech32(sanitizeString(walletState.address)).to_bytes()).toString('hex')
-                            : null)
+                        // Try with the last normalized/hex address we derived
+                        // If we don't have one, just try to get one from the string
+                        let addrToUse = lastNormalizedAddress
+                        if (!addrToUse && walletState.address) {
+                            try {
+                                const sanitized = sanitizeString(walletState.address)
+                                // Convert bech32 to hex bytes if possible
+                                const bytes = CSLAddress.from_bech32(sanitized.toLowerCase()).to_bytes()
+                                addrToUse = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+                            } catch (e) {
+                                // ignore
+                            }
+                        }
 
-                    if (addrToUse) {
-                        // Some wallets expect Hex string for address
-                        const sigStruct = await api.signData(addrToUse, messageHex)
-                        console.info('✅ SIGNING SUCCESSFUL via CIP-30 Fallback!')
-                        return sigStruct.signature
+                        if (addrToUse) {
+                            // Some wallets expect Hex string for address
+                            console.debug('Fallback signing with addr:', addrToUse)
+                            const sigStruct = await api.signData(addrToUse, messageHex)
+                            console.info('✅ SIGNING SUCCESSFUL via CIP-30 Fallback!')
+                            return sigStruct.signature
+                        }
                     }
                 } catch (fallbackErr) {
                     console.error('Fallback CIP-30 signing also failed:', fallbackErr)
@@ -393,3 +409,4 @@ export function useCardanoWallet() {
         lastSignError,
     }
 }
+
