@@ -25,4 +25,9 @@ export class CreatePatientDto {
     @IsArray()
     @IsOptional()
     address?: any[];
+
+    @ApiProperty({ example: 'addr_test1...', required: false })
+    @IsString()
+    @IsOptional()
+    walletAddress?: string;
 }

@@ -32,7 +32,47 @@ export function useCardanoWallet() {
     useEffect(() => {
         const getWallets = () => {
             try {
-                return BrowserWallet.getInstalledWallets() || []
+                // Try MeshSDK first
+                const meshWallets = BrowserWallet.getInstalledWallets() || []
+                console.debug('MeshSDK wallets:', meshWallets)
+
+                // Also check window.cardano directly as fallback
+                const cardano = (window as any).cardano
+                console.debug('window.cardano:', cardano)
+
+                if (!cardano) {
+                    console.warn('window.cardano not found - no wallet extensions detected')
+                    return meshWallets
+                }
+
+                // Manually detect wallets from window.cardano
+                const directWallets: Array<{ name: string; icon: string; version: string }> = []
+
+                // Common wallet keys to check
+                const walletKeys = ['lace', 'nami', 'eternl', 'flint', 'gerowallet', 'typhon']
+
+                walletKeys.forEach(key => {
+                    if (cardano[key] && typeof cardano[key].enable === 'function') {
+                        const wallet = cardano[key]
+                        directWallets.push({
+                            name: key,
+                            icon: wallet.icon || '',
+                            version: wallet.apiVersion || wallet.version || '1.0.0'
+                        })
+                        console.info(`✅ Detected ${key} wallet via window.cardano`)
+                    }
+                })
+
+                // Merge both sources, preferring direct detection
+                const allWallets = [...directWallets]
+                meshWallets.forEach((mw: any) => {
+                    if (!allWallets.find(w => w.name.toLowerCase() === mw.name.toLowerCase())) {
+                        allWallets.push(mw)
+                    }
+                })
+
+                console.log('Total wallets detected:', allWallets)
+                return allWallets
             } catch (e) {
                 console.warn('Failed to get installed wallets:', e)
                 return []
@@ -51,10 +91,11 @@ export function useCardanoWallet() {
             })
         }, 1000)
 
-        // Stop polling after 5 seconds to avoid performance impact
+        // Stop polling after 10 seconds (increased from 5)
         const timeout = setTimeout(() => {
             clearInterval(interval)
-        }, 5000)
+            console.log('Wallet polling stopped. Final count:', getWallets().length)
+        }, 10000)
 
         return () => {
             clearInterval(interval)

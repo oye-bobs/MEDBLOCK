@@ -38,19 +38,19 @@ export class MedicationRequest {
     @Column({ length: 20, default: 'order' })
     intent: string;
 
-    @Column('jsonb')
+    @Column('simple-json')
     medicationCodeableConcept: any;
 
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'datetime', nullable: true })
     authoredOn: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     dosageInstruction: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     dispenseRequest: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     substitution: any;
 
     @Column({ type: 'text', nullable: true })

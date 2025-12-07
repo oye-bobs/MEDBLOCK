@@ -22,12 +22,28 @@ export default function Register() {
 
     // Auto-advance if already connected (handles plugin injection delays)
     useEffect(() => {
-        // Some wallets set `connected` quickly but wallet details may arrive slightly later
-        const isReady = !!connected || !!walletState?.connected
-        if (isReady) {
-            setStep('form')
+        const checkWalletLogin = async () => {
+            // Some wallets set `connected` quickly but wallet details may arrive slightly later
+            const address = walletState?.address
+            if (connected && address && step === 'connect') {
+                console.log('Checking if wallet is already registered...', address)
+                try {
+                    const existingUser = await apiService.checkWallet(address)
+                    if (existingUser) {
+                        console.info('User found! Auto-logging in.', existingUser)
+                        // In a real app we would request a signature here to verify ownership
+                        login(existingUser.did, existingUser.patient_id, 'restored-sig', 'restored-msg')
+                        navigate('/')
+                        return
+                    }
+                } catch (e) {
+                    // Not found or error, proceed to registration
+                }
+                setStep('form')
+            }
         }
-    }, [connected, walletState])
+        checkWalletLogin()
+    }, [connected, walletState, step, navigate, login])
 
     const handleConnectWallet = async (walletName: string) => {
         try {
@@ -67,6 +83,7 @@ export default function Register() {
                     { system: 'phone', value: formData.phone },
                 ],
                 address: [],
+                walletAddress: walletState.address,
             })
 
             // Store private key securely (user should save this!)

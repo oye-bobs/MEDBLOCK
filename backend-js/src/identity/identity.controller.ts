@@ -33,6 +33,7 @@ export class IdentityController {
             birthDate: createPatientDto.birth_date,
             telecom: createPatientDto.telecom,
             address: createPatientDto.address,
+            walletAddress: createPatientDto.walletAddress,
             active: true,
         });
 
@@ -57,6 +58,23 @@ export class IdentityController {
     @ApiResponse({ status: 200, description: 'DID document found' })
     async resolveDid(@Param('did') did: string) {
         return this.didService.resolveDid(did);
+    }
+
+    @Post('login-wallet')
+    @ApiOperation({ summary: 'Login with Wallet Address' })
+    @ApiResponse({ status: 200, description: 'Wallet found, returns DID' })
+    async loginWallet(@Body('walletAddress') walletAddress: string) {
+        const patient = await this.patientRepository.findOne({ where: { walletAddress } });
+        if (!patient) {
+            // Return 404-like object or throw exception depending on frontend expectation
+            // Throwing exception is cleaner for axios catch
+            throw new Error('Wallet not found');
+        }
+        return {
+            did: patient.did,
+            patient_id: patient.id,
+            // In a real implementation we would require signature verification here too
+        };
     }
 
     @Post('authenticate')
