@@ -7,11 +7,12 @@ import { DidService } from './did.service';
 import { DidAuthStrategy } from './strategies/did-auth.strategy';
 import { IdentityController } from './identity.controller';
 import { Patient } from '../database/entities/patient.entity';
+import { Practitioner } from '../database/entities/practitioner.entity';
 
 @Module({
     imports: [
         PassportModule,
-        TypeOrmModule.forFeature([Patient]),
+        TypeOrmModule.forFeature([Patient, Practitioner]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({

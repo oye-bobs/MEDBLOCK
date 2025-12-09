@@ -74,27 +74,34 @@ services:
   # ============================================
   # Backend API (Django/FastAPI)
   # ============================================
+  # ============================================
+  # Backend API (NestJS)
+  # ============================================
   backend:
     build:
       context: ./backend-js
       dockerfile: ../infrastructure/docker/backend/Dockerfile
     container_name: medblock-backend
     environment:
-      - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
-      - CARDANO_NODE_SOCKET_PATH=/opt/cardano/ipc/node.socket
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-medblock_db}
-      - DB_USER=${DB_USER:-medblock_user}
-      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - PORT=8000
+      - DATABASE_TYPE=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DB_NAME:-medblock_db}
+      - DATABASE_USER=${DB_USER:-medblock_user}
+      - DATABASE_PASSWORD=${DB_PASSWORD:-changeme}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
+      - CARDANO_NODE_SOCKET_PATH=/opt/cardano/ipc/node.socket
       - PRISM_API_KEY=${PRISM_API_KEY}
       - PRISM_NODE_URL=${PRISM_NODE_URL}
+      - JWT_SECRET=${JWT_SECRET_KEY:-secretKey}
+    env_file:
+      - ./backend-js/.env
     volumes:
-      - ./backend:/app
+      - ./backend-js:/app
+      - /app/node_modules
       - cardano-node-ipc:/opt/cardano/ipc:ro
       - backend-logs:/var/log/medblock
     ports:
@@ -107,12 +114,7 @@ services:
       cardano-node:
         condition: service_healthy
     restart: unless-stopped
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        python manage.py collectstatic --noinput &&
-        gunicorn medblock.wsgi:application --bind 0.0.0.0:8000 --workers 4
-      "
+    command: npm run start:dev
     networks:
       - medblock-network
 

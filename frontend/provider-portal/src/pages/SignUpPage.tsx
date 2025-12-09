@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import BackgroundLayer from '../components/BackgroundLayer';
 import { Shield, User, Mail, Lock, Building, FileText, ArrowLeft, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { apiService } from '../services/api';
 
 const SignUpPage: React.FC = () => {
     const navigate = useNavigate();
@@ -23,12 +24,25 @@ const SignUpPage: React.FC = () => {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement actual registration logic here
-        console.log('Registering provider:', formData);
-        // Simulate success
-        navigate('/dashboard');
+        try {
+            console.log('Registering provider:', formData);
+            // Integrate with backend to create DID
+            const response = await apiService.createProviderDID(formData as any); // Using as any for now as api.ts types might need update
+
+            // In a real app we would potentially sign a message here or save the DID to local storage
+            console.log('Provider DID Created:', response);
+
+            // Login automatically
+            // Need to import auth context
+            // But SignUpPage is a functional component, we can use useAuth if available or import context
+
+            navigate('/login'); // Redirect to login for now to be safe/simple, or implementing auth context usage
+        } catch (error) {
+            console.error('Registration failed:', error);
+            // Handle error state here
+        }
     };
 
     return (

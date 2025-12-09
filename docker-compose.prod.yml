@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # Optimizations for Hosting
+  # ============================================
+
+  # Remove the heavy Cardano Node dependency
+  # We will use Blockfrost API instead for production to save costs
+  cardano-node:
+    deploy:
+      replicas: 0 # Disable this service
+
+  backend:
+    command: npm run start:prod
+    environment:
+      - NODE_ENV=production
+      - DATABASE_HOST=postgres
+      - REDIS_HOST=redis
+      # IMPORANT: You must set these in your server's .env file
+      - BLOCKFROST_PROJECT_ID=${BLOCKFROST_PROJECT_ID}
+      - BLOCKFROST_URL=${BLOCKFROST_URL}
+    volumes:
+      - backend-logs:/var/log/medblock
+      # Remove code mount
+      # Remove cardano-node-ipc mount as we use API
+    depends_on:
+      - postgres
+      - redis
+      # Removed cardano-node dependency
+
+  patient-portal:
+    restart: always
+
+  provider-portal:
+    restart: always
+
+  postgres:
+    restart: always
+    # Persist data
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    restart: always
+
+volumes:
+  # Define volumes again if needed for override context, or let base handle
+  postgres-data:
+  backend-logs:

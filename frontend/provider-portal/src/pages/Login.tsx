@@ -3,39 +3,43 @@ import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../App'
 import { PORTAL_URLS } from '@medblock/shared'
 import { motion } from 'framer-motion'
-import { Building, User, Lock, Stethoscope, ArrowLeft } from 'lucide-react'
+import { Building, User, Stethoscope, ArrowLeft } from 'lucide-react'
 import BackgroundLayer from '@/components/BackgroundLayer'
+import { apiService } from '../services/api'
 
 export default function Login() {
     const { login } = useContext(AuthContext)
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
         facilityName: '',
-        providerName: '',
-        providerID: '',
+        email: '',
     })
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        // Simplified login - in production this would verify DID signature
-        const mockDID = `did:prism:ng:${formData.providerID.toLowerCase().replace(/\s/g, '')}`
-        login(formData.providerName, mockDID)
-        navigate('/dashboard')
+        try {
+            // Real login via API
+            const response = await apiService.loginProvider(formData.email)
+            login(response.name || formData.email, response.did)
+            navigate('/dashboard')
+        } catch (error) {
+            console.error('Login failed:', error)
+            alert('Login failed: ' + (error as any).message)
+        }
     }
 
     // Demo provider credentials
     const demoProviders = [
-        { facility: 'Lagos University Teaching Hospital (LUTH)', name: 'Dr. Adebayo Okonkwo', id: 'LUTH001' },
-        { facility: 'National Hospital Abuja', name: 'Dr. Chioma Nwosu', id: 'NHA002' },
-        { facility: 'Lagoon Hospital', name: 'Dr. Ibrahim Mohammed', id: 'LH003' },
+        { facility: 'Lagos University Teaching Hospital (LUTH)', name: 'Dr. Adebayo Okonkwo', email: 'adebayo@luth.edu.ng' },
+        { facility: 'National Hospital Abuja', name: 'Dr. Chioma Nwosu', email: 'chioma@nha.gov.ng' },
+        { facility: 'Lagoon Hospital', name: 'Dr. Ibrahim Mohammed', email: 'ibrahim@lagoon.com' },
     ]
 
     const fillDemo = (provider: typeof demoProviders[0]) => {
         setFormData({
             facilityName: provider.facility,
-            providerName: provider.name,
-            providerID: provider.id,
+            email: provider.email,
         })
     }
 
@@ -98,30 +102,15 @@ export default function Login() {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                                 <User size={16} className="text-blue-600" />
-                                Provider Name
+                                Email Address
                             </label>
                             <input
-                                type="text"
+                                type="email"
                                 required
-                                value={formData.providerName}
-                                onChange={(e) => setFormData({ ...formData, providerName: e.target.value })}
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                placeholder="e.g., Dr. Adebayo Okonkwo"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
-                                <Lock size={16} className="text-blue-600" />
-                                Provider ID
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.providerID}
-                                onChange={(e) => setFormData({ ...formData, providerID: e.target.value })}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                placeholder="e.g., LUTH001"
+                                placeholder="doctor@hospital.com"
                             />
                         </div>
 
