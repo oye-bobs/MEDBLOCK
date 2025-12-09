@@ -1,9 +1,7 @@
 /// <reference types="vite/client" />
 import axios, { AxiosInstance } from 'axios'
-import demoData from '../mock/demoData'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-const IS_DEMO = (import.meta.env.VITE_DEMO || 'false') === 'true'
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000/api'
 
 class ApiService {
     private client: AxiosInstance
@@ -40,16 +38,22 @@ class ApiService {
         birth_date?: string
         telecom?: any[]
         address?: any[]
+        walletAddress?: string
     }) {
-        if (IS_DEMO) {
-            return demoData.createPatientDID(data)
-        }
         const response = await this.client.post('/identity/patient/create/', data)
         return response.data
     }
 
+    async checkWallet(walletAddress: string) {
+        try {
+            const response = await this.client.post('/identity/login-wallet', { walletAddress })
+            return response.data
+        } catch (error) {
+            return null
+        }
+    }
+
     async resolveDID(did: string) {
-        if (IS_DEMO) return demoData.resolveDID(did)
         const response = await this.client.get('/identity/resolve/', {
             params: { did },
         })
@@ -57,14 +61,12 @@ class ApiService {
     }
 
     async getProfile() {
-        if (IS_DEMO) return demoData.getProfile()
         const response = await this.client.get('/identity/profile/')
         return response.data
     }
 
     // Medical records endpoints
     async getObservations(patientId: string) {
-        if (IS_DEMO) return demoData.getObservations(patientId)
         const response = await this.client.get('/observations/patient_observations/', {
             params: { patient_id: patientId },
         })
@@ -72,13 +74,11 @@ class ApiService {
     }
 
     async getObservation(id: string) {
-        if (IS_DEMO) return demoData.getObservation(id)
         const response = await this.client.get(`/observations/${id}/`)
         return response.data
     }
 
     async createObservation(data: any) {
-        if (IS_DEMO) return demoData.createObservation(data)
         const response = await this.client.post('/observations/', data)
         return response.data
     }
@@ -89,27 +89,22 @@ class ApiService {
         duration_hours?: number
         scope?: string[]
     }) {
-        if (IS_DEMO) return demoData.grantConsent(data)
         const response = await this.client.post('/consents/grant/', data)
         return response.data
     }
 
     async revokeConsent(consentId: string) {
-        if (IS_DEMO) return demoData.revokeConsent(consentId)
         const response = await this.client.post(`/consents/${consentId}/revoke/`)
         return response.data
     }
 
     async getActiveConsents() {
-        if (IS_DEMO) return demoData.getActiveConsents()
         const response = await this.client.get('/consents/active/')
         return response.data
     }
 
     // Access log endpoints
     async getAccessLog(patientDid: string) {
-        if (IS_DEMO) return demoData.getAccessLog(patientDid)
-        // This would need a backend endpoint
         const response = await this.client.get('/access-logs/', {
             params: { patient_did: patientDid },
         })

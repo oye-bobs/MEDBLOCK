@@ -14,16 +14,12 @@ services:
       - cardano-node-ipc:/opt/cardano/ipc
       - ./infrastructure/cardano-node/config:/opt/cardano/config:ro
     command: >
-      run
-      --topology /opt/cardano/config/topology.json
-      --database-path /opt/cardano/data
-      --socket-path /opt/cardano/ipc/node.socket
-      --config /opt/cardano/config/config.json
+      run --topology /opt/cardano/config/topology.json --database-path /opt/cardano/data --socket-path /opt/cardano/ipc/node.socket --config /opt/cardano/config/config.json
     ports:
-      - "3001:3001"  # Node-to-node communication
+      - "3001:3001" # Node-to-node communication
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "cardano-cli query tip --testnet-magic 1 --socket-path /opt/cardano/ipc/node.socket"]
+      test: [ "CMD-SHELL", "cardano-cli query tip --testnet-magic 1 --socket-path /opt/cardano/ipc/node.socket" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -48,7 +44,7 @@ services:
       - "5432:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-medblock_user}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-medblock_user}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -68,7 +64,7 @@ services:
       - "6379:6379"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,7 +76,7 @@ services:
   # ============================================
   backend:
     build:
-      context: ./backend
+      context: ./backend-js
       dockerfile: ../infrastructure/docker/backend/Dockerfile
     container_name: medblock-backend
     environment:
@@ -157,7 +153,6 @@ services:
     restart: unless-stopped
     networks:
       - medblock-network
-
   # ============================================
   # Nginx Reverse Proxy (Optional - Production)
   # ============================================
@@ -178,9 +173,9 @@ services:
   #   networks:
   #     - medblock-network
 
-# ============================================
-# Persistent Volumes
-# ============================================
+  # ============================================
+  # Persistent Volumes
+  # ============================================
 volumes:
   cardano-node-data:
     driver: local

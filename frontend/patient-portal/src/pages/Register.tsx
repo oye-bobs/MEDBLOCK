@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useCardanoWallet } from '../hooks/useCardanoWallet'
 import { useAuth } from '../hooks/useAuth'
+import { apiService } from '../services/api'
 import Swal from 'sweetalert2'
 import { PORTAL_URLS } from '@medblock/shared'
 import { motion } from 'framer-motion'
@@ -52,7 +53,7 @@ const StepIndicator = ({ currentStep, steps }: StepIndicatorProps) => (
 )
 
 export default function Register() {
-    const { connect, walletName, connecting } = useCardanoWallet()
+    const { connect, disconnect, walletName, signMessage, wallets, connected, walletState, lastRawAddress, lastNormalizedAddress, lastSignError } = useCardanoWallet()
     const { login } = useAuth()
     const navigate = useNavigate()
 
@@ -72,73 +73,86 @@ export default function Register() {
 
     const steps = ['Connect', 'Profile', 'Complete']
 
-    const handleConnectWallet = async () => {
+    // Auto-advance if already connected (handles plugin injection delays)
+    useEffect(() => {
+        const checkWalletLogin = async () => {
+            // Some wallets set `connected` quickly but wallet details may arrive slightly later
+            const address = walletState?.address
+            if (connected && address && step === 'connect') {
+                console.log('Checking if wallet is already registered...', address)
+                try {
+                    const existingUser = await apiService.checkWallet(address)
+                    if (existingUser) {
+                        console.info('User found! Auto-logging in.', existingUser)
+                        // In a real app we would request a signature here to verify ownership
+                        login(existingUser.did, existingUser.patient_id, 'restored-sig', 'restored-msg')
+                        navigate('/')
+                        return
+                    }
+                } catch (e) {
+                    // Not found or error, proceed to registration
+                }
+                setStep('form')
+            }
+        }
+        checkWalletLogin()
+    }, [connected, walletState, step, navigate, login])
+
+    const handleConnectWallet = async (walletName: string) => {
         try {
             setError(null)
-            await connect()
-            setStep('form')
+            console.log('Connecting to:', walletName)
+            await connect(walletName)
+            // The useEffect will handle the step change when connected becomes true
         } catch (err: any) {
+            console.error('Connection error:', err)
             setError(err.message || 'Failed to connect wallet')
         }
     }
 
-    const validateForm = () => {
-        if (!formData.givenName || !formData.familyName)
-            return 'Please enter your full name.'
-
-        if (!formData.email.includes('@'))
-            return 'Enter a valid email address.'
-
-        if (formData.phone && formData.phone.length < 10)
-            return 'Enter a valid phone number.'
-
-        if (formData.birthDate) {
-            const age = Math.floor(
-                (Date.now() - new Date(formData.birthDate).getTime()) /
-                (365.25 * 24 * 60 * 60 * 1000)
-            )
-            if (age < 16) return 'You must be at least 16 years old to register.'
-        }
-
-        if (!formData.acceptTerms)
-            return 'You must accept the Terms & Conditions.'
-
-        if (!formData.acceptData)
-            return 'You must consent to the processing of your medical data.'
-
-        return null
+    const handleDisconnect = async () => {
+        await disconnect()
+        setStep('connect')
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError(null)
 
-        const validationError = validateForm()
-        if (validationError) {
-            setError(validationError)
-            return
-        }
-
         setStep('creating')
-        setTimeout(() => {
-            // Mock DID and signature for demo purposes
-            const mockDid = `did:medblock:${Date.now()}`;
-            const mockPatientId = `patient-${Date.now()}`;
-            const mockSignature = "mock-signature";
-            const mockMessage = "mock-auth-message";
 
-            // Login to update auth state
-            login(mockDid, mockPatientId, mockSignature, mockMessage);
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Account Created',
-                text: 'Your profile has been created successfully!',
-                confirmButtonColor: '#2563EB'
+        try {
+            // Create patient DID
+            const result = await apiService.createPatientDID({
+                name: [
+                    {
+                        given: [formData.givenName],
+                        family: formData.familyName,
+                    },
+                ],
+                gender: formData.gender,
+                birth_date: formData.birthDate || undefined,
+                telecom: [
+                    { system: 'email', value: formData.email },
+                    { system: 'phone', value: formData.phone },
+                ],
+                address: [],
+                walletAddress: walletState.address,
             })
 
-            navigate('/dashboard')
-        }, 2000)
+            // Sign a message to authenticate
+            const message = `MEDBLOCK authentication: ${Date.now()}`
+            const signature = await signMessage(message)
+
+            // Login with DID
+            login(result.did, result.patient_id, signature, message)
+
+            // Navigate to dashboard
+            navigate('/')
+        } catch (err: any) {
+            setError(err.response?.data?.error || err.message || 'Failed to create account')
+            setStep('form')
+        }
     }
 
     const getCurrentStepIndex = () => {
@@ -206,52 +220,94 @@ export default function Register() {
                                 </div>
                             )}
 
-                            <button
-                                onClick={handleConnectWallet}
-                                disabled={connecting}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl px-6 py-4 text-lg font-semibold hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
-                            >
-                                {connecting ? (
-                                    <>
-                                        <Loader2 className="animate-spin" />
-                                        Connecting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Wallet />
-                                        Connect Wallet
-                                    </>
-                                )}
-                            </button>
+                            <div className="space-y-3">
+                                {[
+                                    { name: 'nami', label: 'Nami', url: 'https://namiwallet.io' },
+                                    { name: 'eternl', label: 'Eternl', url: 'https://eternl.io' },
+                                    { name: 'flint', label: 'Flint', url: 'https://flint-wallet.com' },
+                                    { name: 'lace', label: 'Lace', url: 'https://www.lace.io' },
+                                ].map((wallet) => {
+                                    const isInstalled = wallets.some((w: any) => w.name.toLowerCase() === wallet.name)
 
-                            <div className="pt-6 border-t border-gray-200/60">
-                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-3">Supported wallets</p>
-                                <div className="flex justify-center gap-3">
-                                    {['Nami', 'Eternl', 'Flint', 'Typhon'].map(w => (
-                                        <span key={w} className="text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full border border-gray-200">
-                                            {w}
-                                        </span>
-                                    ))}
-                                </div>
+                                    if (isInstalled) {
+                                        return (
+                                            <button
+                                                key={wallet.name}
+                                                onClick={() => handleConnectWallet(wallet.name)}
+                                                className="w-full flex items-center justify-between bg-white border-2 border-blue-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl">
+                                                        {wallet.name === 'nami' ? '🔷' : wallet.name === 'eternl' ? '⚡' : wallet.name === 'lace' ? '🧶' : '🔥'}
+                                                    </span>
+                                                    <span className="text-lg font-semibold group-hover:text-blue-600">
+                                                        Connect {wallet.label}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        )
+                                    }
+
+                                    return (
+                                        <a
+                                            key={wallet.name}
+                                            href={wallet.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full flex items-center justify-between bg-white border-2 border-gray-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                                                    {wallet.name === 'nami' ? '🔷' : wallet.name === 'eternl' ? '⚡' : wallet.name === 'lace' ? '🧶' : '🔥'}
+                                                </span>
+                                                <span className="text-lg font-semibold group-hover:text-blue-600">
+                                                    {wallet.label}
+                                                </span>
+                                            </div>
+
+                                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                                Install
+                                            </span>
+                                        </a>
+                                    )
+                                })}
                             </div>
                         </motion.div>
                     )}
 
                     {/* STEP 2 – Form */}
                     {step === 'form' && (
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="space-y-6"
-                        >
-                            <div className="text-center mb-8">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                                    <User className="text-green-600" size={32} />
+                        <div className="space-y-6">
+                            <div className="text-center">
+                                <div className="text-5xl mb-4 text-green-600">✅</div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                    Create Your Profile
+                                </h2>
+                                <div className="flex items-center justify-center gap-2">
+                                    <p className="text-sm text-gray-600">
+                                        Wallet connected: <span className="font-semibold capitalize">{walletName}</span>
+                                    </p>
+                                    <button
+                                        onClick={handleDisconnect}
+                                        className="text-xs text-red-500 hover:text-red-700 underline"
+                                    >
+                                        Disconnect
+                                    </button>
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
-                                <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-700 bg-green-50 inline-flex px-4 py-1.5 rounded-full mx-auto">
-                                    <Wallet size={14} />
-                                    Connected: <span className="font-semibold">{walletName}</span>
+                                {/* Diagnostic panel: shows raw/normalized address and last signing error */}
+                                <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded">
+                                    <p className="text-xs text-gray-500">Wallet diagnostics</p>
+                                    <div className="text-sm text-gray-700">
+                                        <div><strong>Raw address:</strong> <span className="font-mono text-xs break-words">{lastRawAddress ?? '—'}</span></div>
+                                        <div className="mt-1"><strong>Normalized bech32:</strong> <span className="font-mono text-xs break-words">{lastNormalizedAddress ?? '—'}</span></div>
+                                        {lastSignError && (
+                                            <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded text-red-700 text-xs">
+                                                <div><strong>Error:</strong> {String(lastSignError?.error?.message ?? lastSignError?.error ?? lastSignError)}</div>
+                                                {lastSignError?.raw && <div className="mt-1 text-xxs"><strong>raw:</strong> <span className="font-mono break-words">{String(lastSignError.raw)}</span></div>}
+                                                {lastSignError?.sanitized && <div className="mt-1 text-xxs"><strong>sanitized:</strong> <span className="font-mono break-words">{String(lastSignError.sanitized)}</span></div>}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -387,7 +443,7 @@ export default function Register() {
                                     </button>
                                 </div>
                             </form>
-                        </motion.div>
+                        </div>
                     )}
 
                     {/* STEP 3 – Creating */}

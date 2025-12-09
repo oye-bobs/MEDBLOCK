@@ -35,31 +35,31 @@ export class DiagnosticReport {
     @Column({ length: 20, default: 'final' })
     status: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     category: any;
 
-    @Column('jsonb')
+    @Column('simple-json')
     code: any;
 
     @Column({ type: 'text', nullable: true })
     conclusion: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     conclusionCode: any;
 
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'datetime', nullable: true })
     effectiveDatetime: Date;
 
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'datetime', nullable: true })
     issued: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     result: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     imagingStudy: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     media: any;
 
     @CreateDateColumn()
