@@ -23,7 +23,7 @@ export class Practitioner {
     @Index()
     did: string;
 
-    @Column('jsonb')
+    @Column('simple-json')
     name: any;
 
     @Column({ length: 20, nullable: true })
@@ -32,10 +32,10 @@ export class Practitioner {
     @Column({ type: 'date', nullable: true })
     birthDate: Date;
 
-    @Column('jsonb', { default: [] })
+    @Column('simple-json', { default: [] })
     qualification: any[];
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     telecom: any;
 
     @Column({ type: 'boolean', default: true })

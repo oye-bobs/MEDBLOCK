@@ -26,32 +26,47 @@ import { ConsentModule } from './consent/consent.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST', 'localhost'),
-        port: configService.get<number>('DATABASE_PORT', 5432),
-        username: configService.get<string>('DATABASE_USER', 'postgres'),
-        password: configService.get<string>('DATABASE_PASSWORD', 'password'),
-        database: configService.get<string>('DATABASE_NAME', 'medblock'),
-        entities: [
-          Patient,
-          Practitioner,
-          Observation,
-          DiagnosticReport,
-          MedicationRequest,
-          Encounter,
-          ConsentRecord,
-          AccessLog,
-        ],
-        synchronize: configService.get<boolean>('DATABASE_SYNCHRONIZE', true),
-        logging: configService.get<boolean>('DATABASE_LOGGING', false),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const type = configService.get<string>('DATABASE_TYPE', 'postgres');
+        const commonConfig = {
+          entities: [
+            Patient,
+            Practitioner,
+            Observation,
+            DiagnosticReport,
+            MedicationRequest,
+            Encounter,
+            ConsentRecord,
+            AccessLog,
+          ],
+          synchronize: configService.get<boolean>('DATABASE_SYNCHRONIZE', true),
+          logging: configService.get<boolean>('DATABASE_LOGGING', false),
+        };
+
+        if (type === 'sqlite') {
+          return {
+            type: 'sqlite',
+            database: configService.get<string>('DATABASE_NAME', 'medblock.sqlite'),
+            ...commonConfig,
+          };
+        }
+
+        return {
+          type: 'postgres',
+          host: configService.get<string>('DATABASE_HOST', 'localhost'),
+          port: configService.get<number>('DATABASE_PORT', 5432),
+          username: configService.get<string>('DATABASE_USER', 'postgres'),
+          password: configService.get<string>('DATABASE_PASSWORD', 'password'),
+          database: configService.get<string>('DATABASE_NAME', 'medblock'),
+          ...commonConfig,
+        };
+      },
       inject: [ConfigService],
     }),
-    // BlockchainModule,
+    BlockchainModule,
     IdentityModule,
     EncryptionModule,
-    // RecordsModule,
+    RecordsModule,
     ConsentModule,
   ],
   controllers: [AppController],

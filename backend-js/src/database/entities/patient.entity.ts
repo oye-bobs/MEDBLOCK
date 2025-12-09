@@ -25,10 +25,10 @@ export class Patient {
     @Index()
     did: string;
 
-    @Column('jsonb', { default: [] })
+    @Column('simple-json', { default: [] })
     identifier: any[];
 
-    @Column('jsonb')
+    @Column('simple-json')
     name: any;
 
     @Column({ length: 20, nullable: true })
@@ -37,10 +37,10 @@ export class Patient {
     @Column({ type: 'date', nullable: true })
     birthDate: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     address: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     telecom: any;
 
     @Column({ type: 'boolean', default: true })
@@ -49,7 +49,7 @@ export class Patient {
     @Column({ type: 'text', nullable: true })
     photo: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     communication: any;
 
     @CreateDateColumn()
@@ -63,6 +63,10 @@ export class Patient {
 
     @Column({ length: 255, nullable: true })
     blockchainTxId: string;
+
+    @Column({ length: 255, nullable: true, unique: true })
+    @Index()
+    walletAddress: string;
 
     // Relations
     @OneToMany(() => Observation, (observation) => observation.patient)

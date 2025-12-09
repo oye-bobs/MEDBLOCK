@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import wasm from 'vite-plugin-wasm'
+import topLevelAwait from 'vite-plugin-top-level-await'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import path from 'path'
 
-// Simplified config for demo mode - no WASM/Mesh SDK plugins
+// Config with WASM/Mesh SDK plugins
 export default defineConfig({
   plugins: [
     react(),
+    wasm(),
+    topLevelAwait(),
+    nodePolyfills(),
   ],
   resolve: {
     alias: {

@@ -42,8 +42,7 @@ export class AccessLog {
     resourceId: string;
 
     @Column({
-        type: 'enum',
-        enum: AccessAction,
+        type: 'text',
     })
     action: AccessAction;
 
@@ -57,7 +56,7 @@ export class AccessLog {
     @Column({ length: 255, unique: true })
     blockchainTxId: string;
 
-    @Column({ type: 'inet', nullable: true })
+    @Column({ type: 'text', nullable: true })
     ipAddress: string;
 
     @Column({ type: 'text', nullable: true })
