@@ -19,6 +19,11 @@ const containerVariants = {
     }
 }
 
+import { useContext } from 'react'
+import { AuthContext } from '../App'
+
+// ... (variants)
+
 const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
@@ -32,6 +37,7 @@ const itemVariants = {
 }
 
 export default function Dashboard() {
+    const { providerName } = useContext(AuthContext)
     // Mock Data
     const stats = [
         { title: 'Active Patients', value: '1,234', change: '+12%', icon: Users, color: 'bg-blue-500' },
@@ -58,7 +64,7 @@ export default function Dashboard() {
             <motion.div variants={itemVariants} className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                 <div className="relative z-10">
                     <h1 className="text-3xl font-bold mb-2">Provider Dashboard</h1>
-                    <p className="text-blue-100">Welcome back, Dr. Adebayo. Here's what's happening today.</p>
+                    <p className="text-blue-100">Welcome back, {providerName || 'Doctor'}. Here's what's happening today.</p>
                 </div>
                 <div className="absolute right-0 top-0 h-full w-1/2 bg-white/5 skew-x-12 transform origin-bottom-left" />
             </motion.div>

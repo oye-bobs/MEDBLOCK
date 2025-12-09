@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, QrCode, User, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { apiService } from '../services/api'
 
 export default function PatientSearch() {
     const navigate = useNavigate()
@@ -10,23 +11,29 @@ export default function PatientSearch() {
     const [isSearching, setIsSearching] = useState(false)
     const [results, setResults] = useState<any[]>([])
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSearching(true)
+        setResults([])
 
-        // Mock search delay
-        setTimeout(() => {
-            // Mock results
-            if (searchQuery.length > 2) {
-                setResults([
-                    { id: 'MED-2024-001', name: 'John Doe', dob: '1985-03-15', gender: 'Male', lastVisit: '2024-02-20' },
-                    { id: 'MED-2024-045', name: 'Jane Doe', dob: '1990-07-22', gender: 'Female', lastVisit: '2024-01-10' },
-                ])
-            } else {
-                setResults([])
-            }
+        try {
+            const data = await apiService.searchPatients(searchQuery)
+            // Transform data to match UI expected format
+            // Backend returns Patient entity: { id, did, name: [{text: ""}], birthDate, gender, ... }
+            const mappedResults = data.map((p: any) => ({
+                id: p.did, // Use DID as ID
+                name: p.name?.[0]?.text || 'Unknown',
+                dob: p.birthDate,
+                gender: p.gender,
+                lastVisit: 'N/A' // Not in patient entity yet
+            }))
+            setResults(mappedResults)
+        } catch (error) {
+            console.error('Search failed:', error)
+            setResults([])
+        } finally {
             setIsSearching(false)
-        }, 1000)
+        }
     }
 
     return (

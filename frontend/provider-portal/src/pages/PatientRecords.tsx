@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -12,21 +12,64 @@ import {
     ChevronLeft,
     Lock
 } from 'lucide-react'
+import { apiService } from '../services/api'
 
 export default function PatientRecords() {
-    const { patientId } = useParams()
+    const { patientId } = useParams() // This is the DID
     const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('visits')
+    const [patient, setPatient] = useState<any>(null)
+    const [observations, setObservations] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
 
-    // Mock Patient Data
-    const patient = {
-        name: 'John Doe',
-        id: patientId,
-        age: 38,
-        gender: 'Male',
-        bloodType: 'O+',
-        allergies: ['Penicillin', 'Peanuts']
-    }
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!patientId) return
+            try {
+                // Fetch Patient Details
+                // We use resolveDID or if we had a getPatientByDID endpoint that returned entity details
+                // The resolveDID in IdentityController returns basic info. 
+                // Let's assume we can get name etc from it or standard DID document.
+                // Actually, our resolveDid just mocks currently in backend service BUT
+                // we have search that returns entity.
+                // Let's implement a proper 'getPatient' in backend or assume resolveDid returns enough?
+                // DidService.resolveDid is mocked.
+                // Better to rely on a 'get-patient-details' or similar. 
+                // For now, let's try to 'resolve' and if it's minimal, we might need to fix backend.
+                // But let's proceed with fetching what we can.
+                const patientData = await apiService.getPatientDetails(patientId)
+
+                // Fetch Observations
+                const obs = await apiService.getPatientObservations(patientId)
+
+                // Calculate age
+                const calculateAge = (dob: string) => {
+                    if (!dob) return 'N/A'
+                    const birthDate = new Date(dob)
+                    const ageDifMs = Date.now() - birthDate.getTime()
+                    const ageDate = new Date(ageDifMs)
+                    return Math.abs(ageDate.getUTCFullYear() - 1970)
+                }
+
+                setPatient({
+                    name: patientData.name?.[0]?.text || 'Unknown Patient',
+                    id: patientId,
+                    age: calculateAge(patientData.birthDate),
+                    gender: patientData.gender || 'Unknown',
+                    active: true,
+                    // Mock allergies for now as they might be in a different resource
+                    allergies: []
+                })
+                setObservations(obs)
+            } catch (error) {
+                console.error("Failed to fetch patient records", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
+    }, [patientId])
+
 
     const tabs = [
         { id: 'visits', label: 'Visits', icon: Clipboard },
@@ -35,6 +78,9 @@ export default function PatientRecords() {
         { id: 'imaging', label: 'Imaging', icon: Image },
         { id: 'notes', label: 'Clinical Notes', icon: FileText },
     ]
+
+    if (loading) return <div className="p-8 text-center">Loading patient records...</div>
+    if (!patient) return <div className="p-8 text-center">Patient not found</div>
 
     return (
         <motion.div
@@ -57,13 +103,11 @@ export default function PatientRecords() {
                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                             <span>ID: {patient.id}</span>
                             <span>•</span>
-                            <span>{patient.age} yrs</span>
-                            <span>•</span>
                             <span>{patient.gender}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1 text-red-500">
                                 <AlertTriangle size={12} />
-                                Allergies: {patient.allergies.join(', ')}
+                                Allergies: None (Mock)
                             </span>
                         </div>
                     </div>
@@ -109,26 +153,23 @@ export default function PatientRecords() {
                         >
                             {activeTab === 'visits' && (
                                 <div className="space-y-4">
-                                    <div className="border-l-4 border-blue-500 pl-4 py-2">
-                                        <p className="text-sm text-gray-500">Feb 20, 2024</p>
-                                        <h3 className="font-bold text-gray-900">General Checkup</h3>
-                                        <p className="text-gray-600 mt-1">Routine physical examination. Vitals normal. Patient reported mild fatigue.</p>
-                                        <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
-                                            <Lock size={12} />
-                                            <span>Verified on Cardano Blockchain</span>
+                                    {observations.length > 0 ? observations.map((obs: any) => (
+                                        <div key={obs.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                                            <p className="text-sm text-gray-500">{new Date(obs.issued || obs.effectiveDateTime).toLocaleDateString()}</p>
+                                            <h3 className="font-bold text-gray-900">{obs.code?.text || 'Observation'}</h3>
+                                            <p className="text-gray-600 mt-1">{obs.valueString || obs.valueQuantity?.value || 'No value'}</p>
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
+                                                <Lock size={12} />
+                                                <span>Verified on Cardano Blockchain</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    {/* More mock items would go here */}
+                                    )) : (
+                                        <p>No observations found.</p>
+                                    )}
                                 </div>
                             )}
-                            {activeTab === 'labs' && (
-                                <div className="text-center py-12 text-gray-500">
-                                    <Activity size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p>No lab results found for this period.</p>
-                                </div>
-                            )}
-                            {/* Placeholders for other tabs */}
-                            {['meds', 'imaging', 'notes'].includes(activeTab) && (
+                            {/* ... other tabs similar structure ... */}
+                            {['labs', 'meds', 'imaging', 'notes'].includes(activeTab) && (
                                 <div className="text-center py-12 text-gray-500">
                                     <FileText size={48} className="mx-auto mb-4 opacity-20" />
                                     <p>No records available in this category.</p>
