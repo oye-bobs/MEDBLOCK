@@ -18,6 +18,7 @@ export default function Consent() {
     const { data: consents, isLoading } = useQuery({
         queryKey: ['consents'],
         queryFn: () => apiService.getActiveConsents(),
+        refetchInterval: 5000,
     })
 
     const grantMutation = useMutation({
@@ -27,6 +28,26 @@ export default function Consent() {
             setShowGrantForm(false)
             setFormData({ provider_did: '', duration_hours: 72, scope: ['all'] })
         },
+    })
+    const { data: pendingConsents, isLoading: loadingPending } = useQuery({
+        queryKey: ['pending-consents'],
+        queryFn: () => apiService.getPendingConsents(),
+        refetchInterval: 5000,
+    })
+
+    const approveMutation = useMutation({
+        mutationFn: (id: string) => apiService.approveConsent(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['consents'] })
+            queryClient.invalidateQueries({ queryKey: ['pending-consents'] })
+        }
+    })
+
+    const rejectMutation = useMutation({
+        mutationFn: (id: string) => apiService.rejectConsent(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending-consents'] })
+        }
     })
 
     const revokeMutation = useMutation({
@@ -115,6 +136,71 @@ export default function Consent() {
                 </div>
             </motion.div>
 
+            {/* Pending Requests */}
+            <motion.div
+                variants={itemVariants}
+                className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-amber-200/50 p-6 sm:p-8 mb-6"
+            >
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <Clock className="text-amber-600" size={20} />
+                    Pending Requests
+                </h2>
+
+                {loadingPending ? (
+                    <div className="flex flex-col items-center justify-center py-6 gap-3">
+                        <div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : (Array.isArray(pendingConsents) ? pendingConsents : []).length > 0 ? (
+                    <div className="grid gap-4">
+                        {(Array.isArray(pendingConsents) ? pendingConsents : []).map((request: any) => (
+                            <motion.div
+                                key={request.id}
+                                layout
+                                className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm"
+                            >
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="bg-amber-100 p-3 rounded-xl">
+                                            <AlertTriangle className="w-6 h-6 text-amber-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-lg">
+                                                Access Request
+                                            </h3>
+                                            <p className="text-gray-600 text-sm mt-1">
+                                                Provider <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-xs">{request.practitioner?.did}</span> is requesting access.
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                                                <Calendar size={12} />
+                                                <span>Requested: {new Date(request.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 w-full md:w-auto">
+                                        <button
+                                            onClick={() => rejectMutation.mutate(request.id)}
+                                            className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors flex-1 md:flex-none"
+                                        >
+                                            Reject
+                                        </button>
+                                        <button
+                                            onClick={() => approveMutation.mutate(request.id)}
+                                            className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-xl text-sm font-medium transition-colors shadow-sm flex-1 md:flex-none"
+                                        >
+                                            Approve Access
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-8 text-gray-500">
+                        <p>No pending requests.</p>
+                    </div>
+                )}
+            </motion.div>
+
             {/* Active Consents */}
             <motion.div
                 variants={itemVariants}
@@ -130,11 +216,11 @@ export default function Consent() {
                         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 text-sm">Loading consents...</p>
                     </div>
-                ) : consents?.consents?.length > 0 ? (
+                ) : (Array.isArray(consents) ? consents : (consents?.consents || [])).length > 0 ? (
                     <div className="grid gap-4">
-                        {consents.consents.map((consent: any) => (
+                        {(Array.isArray(consents) ? consents : (consents?.consents || [])).map((consent: any, index: number) => (
                             <motion.div
-                                key={consent.id}
+                                key={consent.id || index}
                                 layout
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -153,7 +239,7 @@ export default function Consent() {
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className="px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
                                                     <span className="text-xs text-gray-400">•</span>
-                                                    <span className="text-xs text-gray-500 font-mono">{consent.id.substring(0, 8)}...</span>
+                                                    <span className="text-xs text-gray-500 font-mono">{(consent.id || '').substring(0, 8)}...</span>
                                                 </div>
                                             </div>
 
@@ -161,17 +247,23 @@ export default function Consent() {
                                                 <div>
                                                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Provider DID</span>
                                                     <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 break-all">
-                                                        {consent.provider_did}
+                                                        {consent.provider_did || consent.practitioner?.did || 'Unknown'}
                                                     </p>
                                                 </div>
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-2 text-gray-600">
                                                         <Calendar size={14} />
-                                                        <span>Granted: {format(new Date(consent.granted_at), 'MMM d, yyyy')}</span>
+                                                        <span>Granted: {(() => {
+                                                            const dateVal = consent.grantedAt || consent.granted_at || new Date();
+                                                            try { return format(new Date(dateVal), 'MMM d, yyyy'); } catch { return 'N/A'; }
+                                                        })()}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-gray-600">
                                                         <Clock size={14} />
-                                                        <span>Expires: {format(new Date(consent.expires_at), 'MMM d, yyyy')}</span>
+                                                        <span>Expires: {(() => {
+                                                            const dateVal = consent.expiresAt || consent.expires_at;
+                                                            try { return dateVal ? format(new Date(dateVal), 'MMM d, yyyy') : 'Never'; } catch { return 'N/A'; }
+                                                        })()}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -189,7 +281,7 @@ export default function Consent() {
                                         <div className="text-xs text-right space-y-1">
                                             <p className="text-gray-400">Smart Contract</p>
                                             <p className="font-mono text-gray-500 text-[10px] break-all max-w-[150px]">
-                                                {consent.smart_contract_address}
+                                                {consent.smart_contract_address || 'Not Deployed'}
                                             </p>
                                         </div>
                                     </div>
@@ -280,8 +372,8 @@ export default function Consent() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, duration_hours: option.value })}
                                                 className={`py-2.5 px-4 rounded-xl text-sm font-medium border transition-all ${formData.duration_hours === option.value
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                                                     }`}
                                             >
                                                 {option.label}

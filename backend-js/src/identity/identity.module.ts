@@ -8,11 +8,22 @@ import { DidAuthStrategy } from './strategies/did-auth.strategy';
 import { IdentityController } from './identity.controller';
 import { Patient } from '../database/entities/patient.entity';
 import { Practitioner } from '../database/entities/practitioner.entity';
+import { Observation } from '../database/entities/observation.entity';
+import { DiagnosticReport } from '../database/entities/diagnostic-report.entity';
+import { MedicationRequest } from '../database/entities/medication-request.entity';
+import { ConsentRecord } from '../database/entities/consent-record.entity';
 
 @Module({
     imports: [
         PassportModule,
-        TypeOrmModule.forFeature([Patient, Practitioner]),
+        TypeOrmModule.forFeature([
+            Patient,
+            Practitioner,
+            Observation,
+            DiagnosticReport,
+            MedicationRequest,
+            ConsentRecord
+        ]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({

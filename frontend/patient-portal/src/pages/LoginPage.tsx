@@ -1,78 +1,125 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useCardanoWallet } from '../hooks/useCardanoWallet'
+import { useAuth } from '../hooks/useAuth'
+import { apiService } from '../services/api'
+import Swal from 'sweetalert2'
+import { motion } from 'framer-motion'
 import {
-  Loader2,
-  Lock,
-  Mail,
-  Eye,
-  EyeOff,
+  Wallet,
   Shield,
-  Smartphone,
-  Laptop,
-  ArrowLeft
-} from "lucide-react";
-import { motion } from "framer-motion";
+  Check,
+  Loader2,
+  ArrowLeft,
+  AlertTriangle
+} from 'lucide-react'
 
-const LoginPage: React.FC = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
+const Loader = () => (
+  <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
+)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+export default function LoginPage() {
+  const { connect, disconnect, walletName, signMessage, wallets, connected, walletState } = useCardanoWallet()
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [step, setStep] = useState<'connect' | 'authenticating'>('connect')
+  const [error, setError] = useState<string | null>(null)
+  const [checkingWallet, setCheckingWallet] = useState(false)
+  const [walletStatus, setWalletStatus] = useState<{
+    hasExtension: boolean
+    message?: string
+  }>({ hasExtension: false })
 
-    if (!form.email || !form.password) {
-      Swal.fire({
-        icon: "error",
-        title: "Missing Fields",
-        text: "Please fill in all fields.",
-        confirmButtonColor: "#2563EB",
-      });
-      return;
+  // Check for wallet extensions on mount
+  useEffect(() => {
+    const hasAnyWallet = wallets.length > 0
+    setWalletStatus({
+      hasExtension: hasAnyWallet,
+      message: hasAnyWallet
+        ? `${wallets.length} wallet extension${wallets.length > 1 ? 's' : ''} detected`
+        : 'No wallet extensions found. Please install a Cardano wallet.'
+    })
+  }, [wallets])
+
+  // Auto-login when wallet connects
+  useEffect(() => {
+    const handleWalletLogin = async () => {
+      const address = walletState?.address
+      if (connected && address && step === 'connect') {
+        console.log('Attempting to login with wallet:', address)
+        setCheckingWallet(true)
+        setStep('authenticating')
+
+        try {
+          // Check if wallet is registered
+          const existingUser = await apiService.checkWallet(address)
+
+          if (!existingUser) {
+            throw new Error('Wallet not registered. Please create an account first.')
+          }
+
+          // Request signature to verify ownership
+          const message = `MEDBLOCK authentication: ${Date.now()}`
+          const signature = await signMessage(message)
+
+          // Authenticate with backend to get JWT token
+          const authResult = await apiService.authenticate(
+            existingUser.did,
+            message,
+            signature,
+            'patient'
+          )
+
+          // Login with DID and JWT token
+          login(existingUser.did, existingUser.patient_id, authResult.accessToken)
+
+          // Show success message
+          await Swal.fire({
+            icon: 'success',
+            title: 'Welcome Back!',
+            text: 'Login successful',
+            timer: 1500,
+            showConfirmButton: false
+          })
+
+          navigate('/dashboard')
+        } catch (err: any) {
+          console.error('Login error:', err)
+          setError(err.message || 'Failed to login. Please try again.')
+          setStep('connect')
+          await disconnect()
+        } finally {
+          setCheckingWallet(false)
+        }
+      }
     }
+    handleWalletLogin()
+  }, [connected, walletState, step, navigate, login, signMessage, disconnect])
 
-    if (!form.email.includes("@")) {
-      Swal.fire({
-        icon: "error",
-        title: "Invalid Email",
-        text: "Please enter a valid email address.",
-        confirmButtonColor: "#2563EB",
-      });
-      return;
+  const handleConnectWallet = async (walletName: string) => {
+    try {
+      setError(null)
+      console.log('Connecting to:', walletName)
+      await connect(walletName)
+    } catch (err: any) {
+      console.error('Connection error:', err)
+      setError(err.message || 'Failed to connect wallet')
     }
+  }
 
-    setLoading(true);
-
-    setTimeout(() => {
-      setLoading(false);
-
-      Swal.fire({
-        icon: "success",
-        title: "Login Successful",
-        text: "Welcome back to MEDBLOCK",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      navigate("/dashboard");
-
-    }, 1200);
-  };
+  const handleDisconnect = async () => {
+    await disconnect()
+    setStep('connect')
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-gray-50/50">
-
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 relative overflow-hidden bg-gray-50">
       {/* Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
       <motion.div
@@ -81,150 +128,195 @@ const LoginPage: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md z-10"
       >
-
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
-            className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-lg mb-3"
+            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg mb-4"
           >
-            <Shield className="text-white" size={24} />
+            <Shield className="text-white" size={32} />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            MEDBLOCK
-          </h1>
-          <p className="text-sm text-gray-500 font-medium">Secure Patient Portal</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+          <p className="text-gray-600 font-medium">Connect your wallet to access your account</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white/80 backdrop-blur-xl shadow-xl rounded-2xl p-6 md:p-8 border border-white/60">
-
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Welcome Back</h2>
-            <p className="text-sm text-gray-500 mt-1">Sign in to access your records</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">
-                Email Address
-              </label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={18} />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm"
-                  value={form.email}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Password</label>
-                <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline">
-                  Forgot?
-                </Link>
-              </div>
-
-              <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={18} />
-
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm"
-                  value={form.password}
-                  onChange={handleChange}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold py-3.5 rounded-xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-md"
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-10 border border-white/50 relative overflow-hidden">
+          {/* STEP 1 – Wallet Connect */}
+          {step === 'connect' && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-8 text-center py-8"
             >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : "Sign In"}
-            </button>
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full mb-2">
+                <Wallet className="text-blue-600" size={40} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Connect Your Wallet</h2>
+                <p className="text-gray-600">Sign in securely with your Cardano wallet</p>
+              </div>
 
-          </form>
+              {/* Wallet Detection Status */}
+              {walletStatus.message && (
+                <div className={`p-4 rounded-xl border-2 flex items-center gap-3 text-sm ${walletStatus.hasExtension
+                  ? 'bg-green-50 border-green-200 text-green-700'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
+                  }`}>
+                  {walletStatus.hasExtension ? (
+                    <Check className="flex-shrink-0" size={20} />
+                  ) : (
+                    <AlertTriangle className="flex-shrink-0" size={20} />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold">
+                      {walletStatus.hasExtension ? 'Wallet Extension Detected' : 'No Wallet Found'}
+                    </p>
+                    <p className="text-xs mt-0.5">{walletStatus.message}</p>
+                  </div>
+                </div>
+              )}
 
-          {/* Divider */}
-          <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-3 text-xs text-gray-400 font-medium uppercase">Or continue with</span>
-            <div className="flex-1 border-t border-gray-200"></div>
-          </div>
+              {checkingWallet && (
+                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-700 flex items-center gap-3 text-sm">
+                  <Loader2 className="animate-spin flex-shrink-0" size={20} />
+                  <span className="font-medium">Authenticating...</span>
+                </div>
+              )}
 
-          {/* Quick Access */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <button className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-blue-200 transition-all flex items-center justify-center gap-2 text-gray-600 text-sm font-medium group">
-              <Smartphone size={16} className="group-hover:text-blue-600 transition-colors" /> <span>Mobile App</span>
-            </button>
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3 text-sm text-left">
+                  <AlertTriangle className="flex-shrink-0" size={20} />
+                  {error}
+                </div>
+              )}
 
-            <button className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-blue-200 transition-all flex items-center justify-center gap-2 text-gray-600 text-sm font-medium group">
-              <Laptop size={16} className="group-hover:text-blue-600 transition-colors" /> <span>Web Portal</span>
-            </button>
-          </div>
+              <div className="space-y-3">
+                {[
+                  { name: 'nami', label: 'Nami', url: 'https://namiwallet.io' },
+                  { name: 'eternl', label: 'Eternl', url: 'https://eternl.io' },
+                  { name: 'flint', label: 'Flint', url: 'https://flint-wallet.com' },
+                  { name: 'lace', label: 'Lace', url: 'https://www.lace.io' },
+                ].map((wallet) => {
+                  const isInstalled = wallets.some((w: any) => w.name.toLowerCase() === wallet.name)
 
-          {/* Sign Up */}
-          <div className="text-center pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors">
-                Create account
-              </Link>
-            </p>
-          </div>
+                  if (isInstalled) {
+                    return (
+                      <button
+                        key={wallet.name}
+                        onClick={() => handleConnectWallet(wallet.name)}
+                        disabled={checkingWallet}
+                        className="w-full flex items-center justify-between bg-white border-2 border-blue-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">
+                            {wallet.name === 'nami' ? '🔷' : wallet.name === 'eternl' ? '⚡' : wallet.name === 'lace' ? '🧶' : '🔥'}
+                          </span>
+                          <span className="text-lg font-semibold group-hover:text-blue-600">
+                            Connect {wallet.label}
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
+                          <Check size={14} />
+                          Installed
+                        </span>
+                      </button>
+                    )
+                  }
 
+                  return (
+                    <a
+                      key={wallet.name}
+                      href={wallet.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-between bg-white border-2 border-gray-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
+                          {wallet.name === 'nami' ? '🔷' : wallet.name === 'eternl' ? '⚡' : wallet.name === 'lace' ? '🧶' : '🔥'}
+                        </span>
+                        <span className="text-lg font-semibold group-hover:text-blue-600">
+                          {wallet.label}
+                        </span>
+                      </div>
+
+                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        Install
+                      </span>
+                    </a>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 2 – Authenticating */}
+          {step === 'authenticating' && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center space-y-8 py-12"
+            >
+              <div className="relative inline-flex items-center justify-center w-24 h-24">
+                <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-25"></div>
+                <div className="relative bg-white p-4 rounded-full shadow-lg border border-blue-100">
+                  <Loader />
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Authenticating</h2>
+                <p className="text-gray-600">Verifying your identity on the blockchain...</p>
+              </div>
+
+              <div className="space-y-4 max-w-sm mx-auto bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Checking wallet</span>
+                  <div className="flex items-center gap-2 text-green-600 font-medium">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    Processing
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Verifying signature</span>
+                  <div className="flex items-center gap-2 text-blue-600 font-medium">
+                    <Loader2 size={14} className="animate-spin" />
+                    Verifying
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        {/* Small Footer */}
-        <div className="mt-6 text-center space-y-3">
-          <Link to="/user-selection" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition-colors">
+        {/* Footer Links */}
+        <div className="mt-8 text-center space-y-4">
+          <Link to="/user-selection" className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors inline-flex items-center gap-1">
             <ArrowLeft size={14} /> Back to Role Selection
           </Link>
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-1.5 text-[10px] text-gray-400 bg-white/40 rounded-full px-3 py-1 border border-white/30 backdrop-blur-sm">
-              <Shield size={10} />
-              <span>Secured by Cardano Blockchain</span>
-            </div>
-          </div>
+          <p className="text-sm text-gray-500">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+              Create account
+            </Link>
+          </p>
         </div>
       </motion.div>
 
       <style>{`
-        @keyframes blob {
-          0% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0, 0) scale(1); }
-        }
-        .animate-blob { animation: blob 7s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-      `}</style>
+                @keyframes blob {
+                    0% { transform: translate(0, 0) scale(1); }
+                    33% { transform: translate(30px, -50px) scale(1.1); }
+                    66% { transform: translate(-20px, 20px) scale(0.9); }
+                    100% { transform: translate(0, 0) scale(1); }
+                }
+                .animate-blob { animation: blob 7s infinite; }
+                .animation-delay-2000 { animation-delay: 2s; }
+                .animation-delay-4000 { animation-delay: 4s; }
+            `}</style>
     </div>
-  );
-};
-
-export default LoginPage;
+  )
+}

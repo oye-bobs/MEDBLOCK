@@ -59,6 +59,12 @@ export default function Register() {
 
     const [step, setStep] = useState<'connect' | 'form' | 'creating'>('connect')
     const [error, setError] = useState<string | null>(null)
+    const [checkingWallet, setCheckingWallet] = useState(false)
+    const [walletStatus, setWalletStatus] = useState<{
+        hasExtension: boolean
+        isRegistered: boolean
+        message?: string
+    }>({ hasExtension: false, isRegistered: false })
 
     const [formData, setFormData] = useState({
         givenName: '',
@@ -73,6 +79,18 @@ export default function Register() {
 
     const steps = ['Connect', 'Profile', 'Complete']
 
+    // Check for wallet extensions on mount
+    useEffect(() => {
+        const hasAnyWallet = wallets.length > 0
+        setWalletStatus(prev => ({
+            ...prev,
+            hasExtension: hasAnyWallet,
+            message: hasAnyWallet
+                ? `${wallets.length} wallet extension${wallets.length > 1 ? 's' : ''} detected`
+                : 'No wallet extensions found. Please install a Cardano wallet.'
+        }))
+    }, [wallets])
+
     // Auto-advance if already connected (handles plugin injection delays)
     useEffect(() => {
         const checkWalletLogin = async () => {
@@ -80,17 +98,51 @@ export default function Register() {
             const address = walletState?.address
             if (connected && address && step === 'connect') {
                 console.log('Checking if wallet is already registered...', address)
+                setCheckingWallet(true)
                 try {
                     const existingUser = await apiService.checkWallet(address)
                     if (existingUser) {
                         console.info('User found! Auto-logging in.', existingUser)
-                        // In a real app we would request a signature here to verify ownership
-                        login(existingUser.did, existingUser.patient_id, 'restored-sig', 'restored-msg')
-                        navigate('/')
+                        setWalletStatus({
+                            hasExtension: true,
+                            isRegistered: true,
+                            message: 'Wallet already registered! Logging you in...'
+                        })
+
+                        // Show success message
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Welcome Back!',
+                            text: 'Your wallet is already registered. Logging you in...',
+                            timer: 2000,
+                            showConfirmButton: false
+                        })
+
+                        // Request signature to verify ownership and get JWT token
+                        const message = `MEDBLOCK authentication: ${Date.now()}`
+                        const signature = await signMessage(message)
+                        const authResult = await apiService.authenticate(existingUser.did, message, signature, 'patient')
+
+                        login(existingUser.did, existingUser.patient_id, authResult.accessToken)
+                        navigate('/dashboard')
                         return
+                    } else {
+                        setWalletStatus({
+                            hasExtension: true,
+                            isRegistered: false,
+                            message: 'Wallet connected! Please complete your profile.'
+                        })
                     }
                 } catch (e) {
                     // Not found or error, proceed to registration
+                    console.log('Wallet not registered, proceeding to registration')
+                    setWalletStatus({
+                        hasExtension: true,
+                        isRegistered: false,
+                        message: 'New wallet detected. Let\'s create your account!'
+                    })
+                } finally {
+                    setCheckingWallet(false)
                 }
                 setStep('form')
             }
@@ -122,6 +174,10 @@ export default function Register() {
         setStep('creating')
 
         try {
+            if (!walletState.address) {
+                throw new Error('Wallet address not found. Please ensure your wallet is connected and unlocked.')
+            }
+
             // Create patient DID
             const result = await apiService.createPatientDID({
                 name: [
@@ -144,11 +200,14 @@ export default function Register() {
             const message = `MEDBLOCK authentication: ${Date.now()}`
             const signature = await signMessage(message)
 
-            // Login with DID
-            login(result.did, result.patient_id, signature, message)
+            // Authenticate with backend to get JWT token
+            const authResult = await apiService.authenticate(result.did, message, signature, 'patient')
+
+            // Login with DID and JWT token
+            login(result.did, result.patient_id, authResult.accessToken)
 
             // Navigate to dashboard
-            navigate('/')
+            navigate('/dashboard')
         } catch (err: any) {
             setError(err.response?.data?.error || err.message || 'Failed to create account')
             setStep('form')
@@ -213,6 +272,33 @@ export default function Register() {
                                 <p className="text-gray-600">Connect your Cardano wallet to begin your secure medical journey. No password required.</p>
                             </div>
 
+                            {/* Wallet Detection Status */}
+                            {walletStatus.message && (
+                                <div className={`p-4 rounded-xl border-2 flex items-center gap-3 text-sm ${walletStatus.hasExtension
+                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                                    }`}>
+                                    {walletStatus.hasExtension ? (
+                                        <Check className="flex-shrink-0" size={20} />
+                                    ) : (
+                                        <AlertTriangle className="flex-shrink-0" size={20} />
+                                    )}
+                                    <div className="flex-1">
+                                        <p className="font-semibold">
+                                            {walletStatus.hasExtension ? 'Wallet Extension Detected' : 'No Wallet Found'}
+                                        </p>
+                                        <p className="text-xs mt-0.5">{walletStatus.message}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {checkingWallet && (
+                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-700 flex items-center gap-3 text-sm">
+                                    <Loader2 className="animate-spin flex-shrink-0" size={20} />
+                                    <span className="font-medium">Checking if wallet is registered...</span>
+                                </div>
+                            )}
+
                             {error && (
                                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3 text-sm text-left">
                                     <AlertTriangle className="flex-shrink-0" size={20} />
@@ -234,7 +320,8 @@ export default function Register() {
                                             <button
                                                 key={wallet.name}
                                                 onClick={() => handleConnectWallet(wallet.name)}
-                                                className="w-full flex items-center justify-between bg-white border-2 border-blue-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group"
+                                                disabled={checkingWallet}
+                                                className="w-full flex items-center justify-between bg-white border-2 border-blue-100 hover:border-blue-500 text-gray-700 rounded-lg px-6 py-4 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-2xl">
@@ -244,6 +331,10 @@ export default function Register() {
                                                         Connect {wallet.label}
                                                     </span>
                                                 </div>
+                                                <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
+                                                    <Check size={14} />
+                                                    Installed
+                                                </span>
                                             </button>
                                         )
                                     }
@@ -283,7 +374,7 @@ export default function Register() {
                                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                     Create Your Profile
                                 </h2>
-                                <div className="flex items-center justify-center gap-2">
+                                <div className="flex items-center justify-center gap-2 flex-wrap">
                                     <p className="text-sm text-gray-600">
                                         Wallet connected: <span className="font-semibold capitalize">{walletName}</span>
                                     </p>
@@ -294,6 +385,15 @@ export default function Register() {
                                         Disconnect
                                     </button>
                                 </div>
+
+                                {/* Wallet Status Badge */}
+                                {walletStatus.message && !walletStatus.isRegistered && (
+                                    <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs font-medium">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                        New Wallet - Creating Account
+                                    </div>
+                                )}
+
                                 {/* Diagnostic panel: shows raw/normalized address and last signing error */}
                                 <div className="mt-4 p-3 bg-gray-50 border border-gray-100 rounded">
                                     <p className="text-xs text-gray-500">Wallet diagnostics</p>

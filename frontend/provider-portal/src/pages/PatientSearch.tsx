@@ -20,13 +20,25 @@ export default function PatientSearch() {
             const data = await apiService.searchPatients(searchQuery)
             // Transform data to match UI expected format
             // Backend returns Patient entity: { id, did, name: [{text: ""}], birthDate, gender, ... }
-            const mappedResults = data.map((p: any) => ({
-                id: p.did, // Use DID as ID
-                name: p.name?.[0]?.text || 'Unknown',
-                dob: p.birthDate,
-                gender: p.gender,
-                lastVisit: 'N/A' // Not in patient entity yet
-            }))
+            const mappedResults = data.map((p: any) => {
+                // Helper to format name from FHIR structure
+                const getName = () => {
+                    const nameObj = p.name?.[0];
+                    if (!nameObj) return 'Unknown';
+                    if (nameObj.text) return nameObj.text;
+                    const given = Array.isArray(nameObj.given) ? nameObj.given.join(' ') : (nameObj.given || '');
+                    const family = nameObj.family || '';
+                    return `${given} ${family}`.trim() || 'Unknown';
+                };
+
+                return {
+                    id: p.did, // Use DID as ID
+                    name: getName(),
+                    dob: p.birthDate ? new Date(p.birthDate).toLocaleDateString() : 'N/A',
+                    gender: p.gender || 'N/A',
+                    lastVisit: 'N/A' // Not in patient entity yet
+                };
+            })
             setResults(mappedResults)
         } catch (error) {
             console.error('Search failed:', error)
@@ -46,7 +58,7 @@ export default function PatientSearch() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Patient Search</h1>
-                    <p className="text-gray-600">Locate patient records securely via MEDBLOCK ID or Name</p>
+                    <p className="text-gray-600">Locate patient records securely via Patient DID or Name</p>
                 </div>
                 <button className="btn btn-primary flex items-center gap-2">
                     <QrCode size={20} />
@@ -55,7 +67,7 @@ export default function PatientSearch() {
             </div>
 
             {/* Search Card */}
-            <div className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm p-6">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-6">
                 <form onSubmit={handleSearch} className="space-y-4">
                     <div className="flex gap-4 mb-4">
                         <button
@@ -63,7 +75,7 @@ export default function PatientSearch() {
                             onClick={() => setSearchType('id')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${searchType === 'id' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                         >
-                            By MEDBLOCK ID
+                            By Patient DID
                         </button>
                         <button
                             type="button"
@@ -80,7 +92,7 @@ export default function PatientSearch() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={searchType === 'id' ? "Enter Patient ID (e.g., MED-2024-001)" : "Enter Patient Name"}
+                            placeholder={searchType === 'id' ? "Enter Patient DID (e.g., did:medblock:patient:...)" : "Enter Patient Name"}
                             className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                         />
                         <button
@@ -105,7 +117,7 @@ export default function PatientSearch() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                                 transition={{ duration: 0.3 }}
-                                className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer group"
+                                className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-4 flex items-center justify-between hover:shadow-md transition-all cursor-pointer group"
                                 onClick={() => navigate(`/patients/${patient.id}/records`)}
                             >
                                 <div className="flex items-center gap-4">
@@ -115,7 +127,7 @@ export default function PatientSearch() {
                                     <div>
                                         <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{patient.name}</h3>
                                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                                            <span>ID: {patient.id}</span>
+                                            <span>DID: {patient.id}</span>
                                             <span>•</span>
                                             <span>{patient.gender}</span>
                                             <span>•</span>
@@ -138,7 +150,7 @@ export default function PatientSearch() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
-                            className="text-center py-12 h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-dashed border-gray-300 shadow-sm"
+                            className="text-center py-12 bg-white/80 backdrop-blur-xl rounded-2xl border border-dashed border-gray-300 shadow-sm"
                         >
                             <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-3">
                                 <User className="text-gray-400" size={24} />

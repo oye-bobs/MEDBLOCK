@@ -15,7 +15,7 @@ type AuthContextType = {
   patientId?: string | null
   isAuthenticated: boolean
   profile?: Profile | null
-  login: (did: string, patientId: string, signature: string, message: string) => void
+  login: (did: string, patientId: string, accessToken: string) => void
   logout: () => void
 }
 
@@ -45,11 +45,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [did, isAuthenticated])
 
-  const login = (newDid: string, newPatientId: string, signature: string, message: string) => {
-    // Persist auth for API service interceptor
+  const login = (newDid: string, newPatientId: string, accessToken: string) => {
+    // Store authentication data
     localStorage.setItem('did', newDid)
-    localStorage.setItem('signature', signature)
-    localStorage.setItem('message', message)
+    localStorage.setItem('access_token', accessToken)
     localStorage.setItem('patient_id', newPatientId)
 
     setDid(newDid)
@@ -59,8 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem('did')
-    localStorage.removeItem('signature')
-    localStorage.removeItem('message')
+    localStorage.removeItem('access_token')
     localStorage.removeItem('patient_id')
     setDid(null)
     setPatientId(null)

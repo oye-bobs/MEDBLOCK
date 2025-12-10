@@ -14,17 +14,13 @@ class ApiService {
             },
         })
 
-        // Add request interceptor for DID authentication
+        // Add request interceptor for JWT authentication
         this.client.interceptors.request.use((config) => {
-            const did = localStorage.getItem('did')
-            const signature = localStorage.getItem('signature')
-            const message = localStorage.getItem('message')
+            const token = localStorage.getItem('access_token')
 
-            if (did && signature && message) {
+            if (token) {
                 // @ts-ignore
-                config.headers['Authorization'] = `DID ${did} signature:${signature}`
-                // @ts-ignore
-                config.headers['X-DID-Message'] = message
+                config.headers['Authorization'] = `Bearer ${token}`
             }
 
             return config
@@ -40,7 +36,7 @@ class ApiService {
         address?: any[]
         walletAddress?: string
     }) {
-        const response = await this.client.post('/identity/patient/create/', data)
+        const response = await this.client.post('/identity/patient/create', data)
         return response.data
     }
 
@@ -53,6 +49,16 @@ class ApiService {
         }
     }
 
+    async authenticate(did: string, message: string, signature: string, role: string = 'patient') {
+        const response = await this.client.post('/identity/authenticate', {
+            did,
+            message,
+            signature,
+            role
+        })
+        return response.data
+    }
+
     async resolveDID(did: string) {
         const response = await this.client.get('/identity/resolve/', {
             params: { did },
@@ -61,53 +67,65 @@ class ApiService {
     }
 
     async getProfile() {
-        const response = await this.client.get('/identity/profile/')
+        const response = await this.client.get('/identity/profile')
         return response.data
     }
 
     // Medical records endpoints
-    async getObservations(patientId: string) {
-        const response = await this.client.get('/observations/patient_observations/', {
-            params: { patient_id: patientId },
-        })
+    async getObservations(patientDid: string) {
+        const response = await this.client.get(`/records/observations/patient/${patientDid}`)
         return response.data
     }
 
     async getObservation(id: string) {
-        const response = await this.client.get(`/observations/${id}/`)
+        const response = await this.client.get(`/records/observations/${id}`)
         return response.data
     }
 
     async createObservation(data: any) {
-        const response = await this.client.post('/observations/', data)
+        const response = await this.client.post('/records/observations', data)
         return response.data
     }
 
     // Consent endpoints
     async grantConsent(data: {
-        provider_did: string
-        duration_hours?: number
+        providerDid: string
+        durationHours?: number
         scope?: string[]
     }) {
-        const response = await this.client.post('/consents/grant/', data)
+        const response = await this.client.post('/consent/grant', data)
         return response.data
     }
 
     async revokeConsent(consentId: string) {
-        const response = await this.client.post(`/consents/${consentId}/revoke/`)
+        const response = await this.client.post(`/consent/${consentId}/revoke`)
         return response.data
     }
 
     async getActiveConsents() {
-        const response = await this.client.get('/consents/active/')
+        const response = await this.client.get('/consent/active')
+        return response.data
+    }
+
+    async getPendingConsents() {
+        const response = await this.client.get('/consent/pending')
+        return response.data
+    }
+
+    async approveConsent(consentId: string) {
+        const response = await this.client.post(`/consent/${consentId}/approve`)
+        return response.data
+    }
+
+    async rejectConsent(consentId: string) {
+        const response = await this.client.post(`/consent/${consentId}/reject`)
         return response.data
     }
 
     // Access log endpoints
+    // Access log endpoints
     async getAccessLog(patientDid: string) {
-        const response = await this.client.get('/access-logs/', {
-            params: { patient_did: patientDid },
-        })
+        const response = await this.client.get(`/records/access-logs/${patientDid}`)
         return response.data
     }
 }

@@ -14,13 +14,11 @@ import { Encounter } from './encounter.entity';
 import { ConsentRecord } from './consent-record.entity';
 
 @Entity('fhir_practitioner')
-@Index(['did'])
 export class Practitioner {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({ unique: true, length: 255 })
-    @Index()
     did: string;
 
     @Column('simple-json')
@@ -40,6 +38,9 @@ export class Practitioner {
 
     @Column({ type: 'boolean', default: true })
     active: boolean;
+
+    @Column('simple-json', { nullable: true })
+    meta: any;
 
     @CreateDateColumn()
     createdAt: Date;

@@ -13,7 +13,6 @@ import { Practitioner } from './practitioner.entity';
 
 @Entity('fhir_encounter')
 @Index(['patient', 'periodStart'])
-@Index(['blockchainHash'])
 export class Encounter {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -39,10 +38,10 @@ export class Encounter {
     @Column('simple-json', { nullable: true })
     type: any;
 
-    @Column({ type: 'datetime', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     periodStart: Date;
 
-    @Column({ type: 'datetime', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     periodEnd: Date;
 
     @Column('simple-json', { nullable: true })
@@ -64,7 +63,6 @@ export class Encounter {
     updatedAt: Date;
 
     @Column({ length: 64, unique: true })
-    @Index()
     blockchainHash: string;
 
     @Column({ length: 255, nullable: true })

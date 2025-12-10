@@ -12,12 +12,14 @@ import BackgroundLayer from './components/BackgroundLayer'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
 import UserSelection from './pages/UserSelection'
+import { NotificationProvider } from './context/NotificationContext'
+
 const queryClient = new QueryClient()
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuth()
     if (!isAuthenticated) {
-        return <Navigate to="/register" replace />
+        return <Navigate to="/login" replace />
     }
     return <>{children}</>
 }
@@ -49,10 +51,12 @@ function AppRoutes() {
 export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <BackgroundLayer />
-                <AppRoutes />
-            </AuthProvider>
+            <NotificationProvider>
+                <AuthProvider>
+                    <BackgroundLayer />
+                    <AppRoutes />
+                </AuthProvider>
+            </NotificationProvider>
         </QueryClientProvider>
     )
 }
