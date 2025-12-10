@@ -32,4 +32,32 @@ export class ConsentController {
     async getActiveConsents(@Request() req) {
         return this.consentService.getActiveConsents(req.user.did);
     }
+    @Post('request')
+    @ApiOperation({ summary: 'Request consent from a patient' })
+    async requestConsent(@Body() body: { patientDid: string; purpose: string; scope: string[] }, @Request() req) {
+        return this.consentService.requestConsent(
+            req.user.did,
+            body.patientDid,
+            body.purpose,
+            body.scope,
+        );
+    }
+
+    @Get('pending')
+    @ApiOperation({ summary: 'Get pending consent requests' })
+    async getPendingConsents(@Request() req) {
+        return this.consentService.getPendingConsents(req.user.did);
+    }
+
+    @Post(':id/approve')
+    @ApiOperation({ summary: 'Approve a consent request' })
+    async approveConsent(@Param('id') id: string, @Request() req) {
+        return this.consentService.approveConsent(id, req.user.did);
+    }
+
+    @Post(':id/reject')
+    @ApiOperation({ summary: 'Reject a consent request' })
+    async rejectConsent(@Param('id') id: string, @Request() req) {
+        return this.consentService.rejectConsent(id, req.user.did);
+    }
 }

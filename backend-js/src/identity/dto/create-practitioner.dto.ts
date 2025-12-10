@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePractitionerDto {
@@ -12,18 +12,28 @@ export class CreatePractitionerDto {
     @IsNotEmpty()
     email: string;
 
-    @ApiProperty({ example: 'MD-12345678' })
+    @ApiProperty({ example: 'General Hospital Lagos' })
     @IsString()
-    @IsOptional()
-    licenseNumber?: string;
-
-    @ApiProperty({ example: 'Cardiology' })
-    @IsString()
-    @IsOptional()
-    specialty?: string;
+    @IsNotEmpty()
+    hospitalName: string;
 
     @ApiProperty({ example: 'General Hospital' })
     @IsString()
+    @IsNotEmpty()
+    hospitalType: string;
+
+    @ApiProperty({ example: 'Cardiology' })
+    @IsString()
+    @IsNotEmpty()
+    specialty: string;
+
+    @ApiProperty({ example: 'password123' })
+    @IsString()
+    @IsNotEmpty()
+    password: string;
+
+    @ApiProperty({ example: 'MD-12345678', required: false })
+    @IsString()
     @IsOptional()
-    hospitalName?: string;
+    licenseNumber?: string;
 }

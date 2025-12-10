@@ -1,10 +1,29 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useAuth } from '../hooks/useAuth'
+import { apiService } from '../services/api'
 import { Shield, FileText, Clock, Activity, Search, Filter, Download } from 'lucide-react'
 import BackgroundLayer from '../components/BackgroundLayer'
 
 export default function AccessLog() {
-    // This would fetch actual access logs from the blockchain
-    const accessLogs: any[] = []
+    const { did } = useAuth()
+    const [accessLogs, setAccessLogs] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            if (!did) return
+            try {
+                const logs = await apiService.getAccessLog(did)
+                setAccessLogs(logs)
+            } catch (error) {
+                console.error('Failed to fetch access logs:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchLogs()
+    }, [did])
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -95,7 +114,39 @@ export default function AccessLog() {
             >
                 {accessLogs.length > 0 ? (
                     <div className="divide-y divide-gray-100">
-                        {/* Access log entries would go here */}
+                        {accessLogs.map((log) => (
+                            <motion.div
+                                key={log.id}
+                                variants={itemVariants}
+                                className="p-4 hover:bg-gray-50 flex items-center justify-between transition-colors"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`
+                                        p-2 rounded-lg 
+                                        ${log.action === 'CREATE' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}
+                                    `}>
+                                        {log.action === 'CREATE' ? <FileText size={20} /> : <Search size={20} />}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-gray-900">
+                                            {log.action === 'CREATE' ? 'Created new record' : 'Viewed record'}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                                            <span className="font-mono text-xs">{log.accessorDid}</span>
+                                            <span>•</span>
+                                            <span>{log.resourceType}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right text-sm text-gray-500">
+                                    <div className="flex items-center gap-1 justify-end">
+                                        <Clock size={14} />
+                                        {new Date(log.timestamp).toLocaleDateString()}
+                                    </div>
+                                    <p className="text-xs mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full py-20 text-center">

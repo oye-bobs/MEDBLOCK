@@ -16,7 +16,7 @@ export default function Profile() {
         >
             <h1 className="text-2xl font-bold text-gray-900">Provider Settings</h1>
 
-            <div className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
                 <div className="flex border-b border-gray-200">
                     <button
                         onClick={() => setActiveTab('general')}

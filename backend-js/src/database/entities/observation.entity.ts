@@ -13,7 +13,6 @@ import { Practitioner } from './practitioner.entity';
 
 @Entity('fhir_observation')
 @Index(['patient', 'effectiveDatetime'])
-@Index(['blockchainHash'])
 export class Observation {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -42,10 +41,10 @@ export class Observation {
     @Column('simple-json', { nullable: true })
     value: any;
 
-    @Column({ type: 'datetime', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     effectiveDatetime: Date;
 
-    @Column({ type: 'datetime', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     issued: Date;
 
     @Column('simple-json', { nullable: true })
@@ -67,7 +66,6 @@ export class Observation {
     updatedAt: Date;
 
     @Column({ length: 64, unique: true })
-    @Index()
     blockchainHash: string;
 
     @Column({ length: 255, nullable: true })

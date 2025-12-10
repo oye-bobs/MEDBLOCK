@@ -39,14 +39,23 @@ export class DidService {
             };
         } catch (error) {
             this.logger.error(`Failed to create DID: ${error.message}`);
-            // Fallback to mock if blockchain fails (e.g. no funds, no aiken build)
-            if (error.message.includes('Could not load Aiken contract')) {
-                this.logger.warn('Falling back to mock DID due to missing Aiken contract.');
+
+            // Fallback to mock DID for various blockchain-related errors
+            if (
+                error.message.includes('Could not load Aiken contract') ||
+                error.message.includes('Lucid not initialized') ||
+                error.message.includes('Blockfrost')
+            ) {
+                this.logger.warn('Falling back to mock DID due to blockchain unavailability.');
                 const didSuffix = Math.random().toString(36).substring(2, 15);
+                const timestamp = Date.now();
                 return {
-                    did: `did:prism:${didSuffix} (MOCK)`,
-                    private_key: 'mock_private_key_' + didSuffix,
-                    warning: 'This is a MOCK DID. Run "aiken build" to enable real DIDs.',
+                    did: `did:medblock:${entityType}:${didSuffix}`,
+                    private_key: `mock_private_key_${didSuffix}_${timestamp}`,
+                    controller: 'mock_controller',
+                    txHash: `mock_tx_${timestamp}`,
+                    warning: 'This is a MOCK DID. Configure BLOCKFROST_PROJECT_ID and BLOCKFROST_URL in .env to enable real blockchain DIDs.',
+                    createdAt: new Date().toISOString(),
                 };
             }
             throw error;

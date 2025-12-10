@@ -15,14 +15,12 @@ import { ConsentRecord } from './consent-record.entity';
 import { AccessLog } from './access-log.entity';
 
 @Entity('fhir_patient')
-@Index(['did'])
 @Index(['birthDate'])
 export class Patient {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({ unique: true, length: 255 })
-    @Index()
     did: string;
 
     @Column('simple-json', { default: [] })
@@ -65,7 +63,6 @@ export class Patient {
     blockchainTxId: string;
 
     @Column({ length: 255, nullable: true, unique: true })
-    @Index()
     walletAddress: string;
 
     // Relations

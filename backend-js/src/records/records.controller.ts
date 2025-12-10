@@ -27,4 +27,16 @@ export class RecordsController {
     async getPatientObservations(@Param('did') did: string, @Request() req) {
         return this.recordsService.getPatientObservations(did, req.user.did);
     }
+
+    @Get('access-logs/provider/me')
+    @ApiOperation({ summary: 'Get access logs for the authenticated provider' })
+    async getProviderAuditLogs(@Request() req) {
+        return this.recordsService.getProviderAccessLogs(req.user.did);
+    }
+
+    @Get('access-logs/:did')
+    @ApiOperation({ summary: 'Get access logs for a patient' })
+    async getAccessLogs(@Param('did') did: string, @Request() req) {
+        return this.recordsService.getAccessLogs(did, req.user.did);
+    }
 }

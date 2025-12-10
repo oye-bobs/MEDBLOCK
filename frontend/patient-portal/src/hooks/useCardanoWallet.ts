@@ -107,8 +107,30 @@ export function useCardanoWallet() {
         const updateWalletState = async () => {
             if (connected && wallet) {
                 try {
-                    const addresses = await wallet.getUsedAddresses()
-                    const address = addresses[0]
+                    let addresses = await wallet.getUsedAddresses()
+                    let address = addresses.length > 0 ? addresses[0] : null
+
+                    if (!address) {
+                        try {
+                            const unused = await wallet.getUnusedAddresses()
+                            if (unused.length > 0) address = unused[0]
+                        } catch (e) {
+                            console.warn('Failed to get unused addresses', e)
+                        }
+                    }
+
+                    if (!address) {
+                        try {
+                            address = await wallet.getChangeAddress()
+                        } catch (e) {
+                            console.warn('Failed to get change address', e)
+                        }
+                    }
+
+                    if (!address) {
+                        console.warn('No address found in wallet')
+                        // Proceed partially connected so user sees UI but arguably should be valid
+                    }
                     const lovelace = await wallet.getLovelace()
                     const networkId = await wallet.getNetworkId()
 

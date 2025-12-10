@@ -124,7 +124,7 @@ export default function PatientRecords() {
             </div>
 
             {/* Tabs */}
-            <div className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
                 <div className="flex overflow-x-auto border-b border-gray-200">
                     {tabs.map((tab) => (
                         <button
@@ -155,7 +155,11 @@ export default function PatientRecords() {
                                 <div className="space-y-4">
                                     {observations.length > 0 ? observations.map((obs: any) => (
                                         <div key={obs.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                                            <p className="text-sm text-gray-500">{new Date(obs.issued || obs.effectiveDateTime).toLocaleDateString()}</p>
+                                            <p className="text-sm text-gray-500">
+                                                {(obs.issued || obs.effectiveDateTime)
+                                                    ? new Date(obs.issued || obs.effectiveDateTime).toLocaleDateString()
+                                                    : 'Date not available'}
+                                            </p>
                                             <h3 className="font-bold text-gray-900">{obs.code?.text || 'Observation'}</h3>
                                             <p className="text-gray-600 mt-1">{obs.valueString || obs.valueQuantity?.value || 'No value'}</p>
                                             <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">

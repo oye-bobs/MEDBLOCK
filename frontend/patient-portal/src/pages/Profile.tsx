@@ -1,194 +1,325 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../services/api'
-import { format } from 'date-fns'
-import { motion } from 'framer-motion'
-import { User, Calendar, Shield, Mail, Phone, AlertTriangle, Copy, CheckCircle } from 'lucide-react'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { motion, AnimatePresence } from 'framer-motion'
+import { format } from 'date-fns'
+import {
+    User,
+    Shield,
+    Key,
+    Bell,
+    Save,
+    Mail,
+    Phone,
+    Calendar,
+    MapPin,
+    Wallet,
+    LogOut,
+    Download,
+    CheckCircle
+} from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import { apiService } from '../services/api'
+import { useNavigate } from 'react-router-dom'
+import Swal from 'sweetalert2'
 import BackgroundLayer from '../components/BackgroundLayer'
 
 export default function Profile() {
+    const { logout, did } = useAuth()
+    const navigate = useNavigate()
+    const [activeTab, setActiveTab] = useState('general')
+
     const { data: profile, isLoading } = useQuery({
         queryKey: ['profile'],
         queryFn: () => apiService.getProfile(),
     })
 
-    const [copied, setCopied] = useState(false)
+    const handleLogout = async () => {
+        const result = await Swal.fire({
+            title: 'Logout',
+            text: 'Are you sure you want to logout?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, logout',
+            cancelButtonText: 'Cancel'
+        })
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
+        if (result.isConfirmed) {
+            logout()
+            navigate('/login')
         }
     }
 
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: {
-                type: "spring",
-                stiffness: 100
-            }
+    const handleExportData = () => {
+        const dataToExport = {
+            profile: profile,
+            exportedAt: new Date().toISOString(),
+            did: did
         }
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `medblock-patient-profile-${format(new Date(), 'yyyy-MM-dd')}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
+    const handleSave = () => {
+        Swal.fire({
+            icon: 'info',
+            title: 'Feature Coming Soon',
+            text: 'Profile updates will be written to the blockchain in the next release.',
+            confirmButtonColor: '#3b82f6'
+        })
     }
 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-500 font-medium">Loading profile...</p>
-                </div>
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
         )
     }
 
+    // Safe accessors for profile data
+    const getGivenName = () => {
+        if (!profile?.name?.[0]) return '';
+        if (profile.name[0].text) return profile.name[0].text; // Fallback if text is used
+        const given = profile.name[0].given;
+        return Array.isArray(given) ? given.join(' ') : given || '';
+    }
+
+    const getFamilyName = () => profile?.name?.[0]?.family || '';
+    const getEmail = () => profile?.telecom?.find((t: any) => t.system === 'email')?.value || '';
+    const getPhone = () => profile?.telecom?.find((t: any) => t.system === 'phone')?.value || '';
+    const getGender = () => profile?.gender || '';
+    const getBirthDate = () => profile?.birthDate ? format(new Date(profile.birthDate), 'yyyy-MM-dd') : '';
+    const getAddress = () => {
+        const addr = profile?.address?.[0];
+        if (!addr) return '';
+        return [addr.line?.join(' '), addr.city, addr.state, addr.country].filter(Boolean).join(', ');
+    }
+
     return (
         <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-6 relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-5xl mx-auto space-y-6 relative"
         >
             <BackgroundLayer />
 
-            {/* Header */}
-            <motion.div variants={itemVariants}>
-                <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-                <p className="text-gray-600 mt-1">Your decentralized identity information</p>
-            </motion.div>
-
-            {/* Profile Card */}
-            <motion.div
-                variants={itemVariants}
-                className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-8 relative overflow-hidden"
-            >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-                    <div className="relative">
-                        <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center shadow-inner">
-                            <User className="w-16 h-16 text-blue-600" />
-                        </div>
-                        <div className="absolute bottom-0 right-0 bg-green-500 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center">
-                            <CheckCircle size={14} className="text-white" />
-                        </div>
-                    </div>
-
-                    <div className="flex-1 text-center md:text-left space-y-2">
-                        <h2 className="text-3xl font-bold text-gray-900">
-                            {profile?.name?.[0]?.given?.join(' ')} {profile?.name?.[0]?.family}
-                        </h2>
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-gray-600">
-                            <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium capitalize flex items-center gap-1.5">
-                                <User size={14} />
-                                {profile?.gender || 'Unknown'}
-                            </span>
-                            {profile?.birth_date && (
-                                <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium flex items-center gap-1.5">
-                                    <Calendar size={14} />
-                                    {format(new Date(profile.birth_date), 'MMMM d, yyyy')}
-                                </span>
-                            )}
-                        </div>
-                    </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Patient Settings</h1>
+                    <p className="text-gray-600">Manage your decentralized identity and preferences</p>
                 </div>
-            </motion.div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* DID Information */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-6"
-                >
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <Shield className="w-5 h-5 text-purple-600" />
-                        </div>
-                        Decentralized Identity
-                    </h3>
-
-                    <div className="space-y-5">
-                        <div className="group">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">DID (Decentralized Identifier)</label>
-                            <div className="relative">
-                                <div className="font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded-xl break-all border border-gray-100 group-hover:border-blue-200 transition-colors">
-                                    {profile?.did}
-                                </div>
-                                <button
-                                    onClick={() => copyToClipboard(profile?.did)}
-                                    className="absolute top-2 right-2 p-2 text-gray-400 hover:text-blue-600 bg-white rounded-lg shadow-sm border border-gray-100 opacity-0 group-hover:opacity-100 transition-all"
-                                >
-                                    {copied ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Patient ID</label>
-                            <div className="font-mono text-sm text-gray-900 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                {profile?.id}
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Contact Information */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-6"
-                >
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <Mail className="w-5 h-5 text-blue-600" />
-                        </div>
-                        Contact Information
-                    </h3>
-
-                    {profile?.telecom && profile.telecom.length > 0 ? (
-                        <div className="space-y-4">
-                            {profile.telecom.map((contact: any, index: number) => (
-                                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors">
-                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-500">
-                                        {contact.system === 'email' ? <Mail size={18} /> : <Phone size={18} />}
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-gray-500 capitalize mb-0.5">{contact.system}</p>
-                                        <p className="text-gray-900 font-medium">{contact.value}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            No contact information available
-                        </div>
-                    )}
-                </motion.div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExportData}
+                        className="px-4 py-2 bg-white/80 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2 shadow-sm transition-all backdrop-blur-sm"
+                    >
+                        <Download size={16} />
+                        Export Data
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="px-4 py-2 bg-red-50/80 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 flex items-center gap-2 shadow-sm transition-all backdrop-blur-sm"
+                    >
+                        <LogOut size={16} />
+                        Logout
+                    </button>
+                </div>
             </div>
 
-            {/* Security Notice */}
-            <motion.div
-                variants={itemVariants}
-                className="bg-amber-50/80 backdrop-blur-sm border border-amber-200 rounded-2xl p-4 flex items-start gap-3"
-            >
-                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-amber-800 leading-relaxed">
-                    <strong>Security Reminder:</strong> Your private key is stored locally in
-                    your browser. Make sure to back it up securely. If you lose it, you will
-                    lose access to your medical records.
-                </p>
-            </motion.div>
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
+                <div className="flex border-b border-gray-200 overflow-x-auto">
+                    <button
+                        onClick={() => setActiveTab('general')}
+                        className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'general' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        General Information
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('security')}
+                        className={`px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'security' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        Security & Wallet
+                    </button>
+                </div>
+
+                <div className="p-6 md:p-8">
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'general' && (
+                            <motion.div
+                                key="general"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.3 }}
+                                className="space-y-8"
+                            >
+                                <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
+                                    <div className="relative">
+                                        <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center text-blue-700 text-3xl font-bold shadow-inner">
+                                            {getGivenName().charAt(0) || <User size={40} />}
+                                        </div>
+                                        <div className="absolute bottom-0 right-0 bg-green-500 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center">
+                                            <CheckCircle size={12} className="text-white" />
+                                        </div>
+                                    </div>
+                                    <div className="text-center md:text-left">
+                                        <h3 className="text-2xl font-bold text-gray-900">{getGivenName()} {getFamilyName()}</h3>
+                                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-1 text-sm text-gray-500">
+                                            <span className="flex items-center gap-1">
+                                                <User size={14} /> Patient
+                                            </span>
+                                            <span className="hidden md:inline">•</span>
+                                            <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{profile?.did}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider border-b pb-2">Personal Details</h4>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                            <div className="relative">
+                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input type="text" defaultValue={getGivenName()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                            <div className="relative">
+                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input type="text" defaultValue={getFamilyName()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                            <select defaultValue={getGender()} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize">
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input type="date" defaultValue={getBirthDate()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider border-b pb-2">Contact Information</h4>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input type="email" defaultValue={getEmail()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                            <div className="relative">
+                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input type="tel" defaultValue={getPhone()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
+                                                <textarea defaultValue={getAddress()} rows={3} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-6 border-t border-gray-100 flex justify-end">
+                                    <button onClick={handleSave} className="btn btn-primary flex items-center gap-2">
+                                        <Save size={18} />
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'security' && (
+                            <motion.div
+                                key="security"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.3 }}
+                                className="space-y-6"
+                            >
+                                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-start gap-4">
+                                    <div className="p-2 bg-indigo-100 rounded-full text-indigo-600">
+                                        <Wallet size={24} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-indigo-900">Connected Wallet</h4>
+                                        <p className="text-sm text-indigo-700 mt-1 mb-2">Your medical records are secured by your Cardano wallet.</p>
+                                        <div className="font-mono text-xs md:text-sm bg-white border border-indigo-100 px-3 py-2 rounded text-indigo-600 break-all">
+                                            {profile?.walletAddress || 'No wallet connected'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm">
+                                        <div className="flex items-center gap-3">
+                                            <Shield className="text-green-600" size={24} />
+                                            <div>
+                                                <p className="font-medium text-gray-900">Two-Factor Authentication</p>
+                                                <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm">
+                                        <div className="flex items-center gap-3">
+                                            <Bell className="text-blue-600" size={24} />
+                                            <div>
+                                                <p className="font-medium text-gray-900">Login Notifications</p>
+                                                <p className="text-sm text-gray-500">Get notified when your account is accessed</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm">
+                                        <div className="flex items-center gap-3">
+                                            <Key className="text-amber-600" size={24} />
+                                            <div>
+                                                <p className="font-medium text-gray-900">DID Management</p>
+                                                <p className="text-sm text-gray-500">View your raw Decentralized Identifier document</p>
+                                            </div>
+                                        </div>
+                                        <button className="text-sm font-medium text-blue-600 hover:text-blue-700">View Document</button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
         </motion.div>
     )
 }

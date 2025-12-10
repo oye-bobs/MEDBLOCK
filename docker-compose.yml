@@ -34,8 +34,8 @@ services:
     container_name: medblock-postgres
     environment:
       - POSTGRES_DB=${DB_NAME:-medblock_db}
-      - POSTGRES_USER=${DB_USER:-medblock_user}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-abasthomas}
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -88,15 +88,15 @@ services:
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_NAME=${DB_NAME:-medblock_db}
-      - DATABASE_USER=${DB_USER:-medblock_user}
-      - DATABASE_PASSWORD=${DB_PASSWORD:-changeme}
+      - DATABASE_USER=${DB_USER:-postgres}
+      - DATABASE_PASSWORD=${DB_PASSWORD:-abasthomas}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
       - CARDANO_NODE_SOCKET_PATH=/opt/cardano/ipc/node.socket
       - PRISM_API_KEY=${PRISM_API_KEY}
       - PRISM_NODE_URL=${PRISM_NODE_URL}
-      - JWT_SECRET=${JWT_SECRET_KEY:-secretKey}
+      - JWT_SECRET=${JWT_SECRET_KEY:-supersecretkey}
     env_file:
       - ./backend-js/.env
     volumes:
