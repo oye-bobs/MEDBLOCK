@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, CheckCircle, Clock, Lock, Upload, File as FileIcon, X, Eye, ChevronRight, AlertCircle, Trash2 } from 'lucide-react'
+import { ChevronLeft, CheckCircle, Clock, Lock, Upload, File as FileIcon, ChevronRight, AlertCircle, Trash2 } from 'lucide-react'
 import { apiService } from '../services/api'
 
 export default function CreateRecord() {
@@ -91,7 +91,7 @@ export default function CreateRecord() {
                 code: {
                     coding: [{
                         system: 'http://loinc.org',
-                        code: 'custom', 
+                        code: 'custom',
                         display: formData.summary
                     }],
                     text: formData.summary
@@ -103,16 +103,20 @@ export default function CreateRecord() {
                 effectiveDatetime: new Date().toISOString(),
                 status: 'final'
             }
-            
+
             // Note: In a real app, we would upload the file here to IPFS or Cloudinary
             // and attach the hash/url to the observationData.
             // For this UI demo, we are just mocking the upload success status.
 
             await apiService.createObservation(observationData)
             setStep(4)
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create record:', error)
-            alert("Failed to create record. Please try again.")
+            if (error.response?.status === 403) {
+                alert("You do not have consent to create records for this patient. Please request access first.")
+            } else {
+                alert("Failed to create record. Please try again.")
+            }
         } finally {
             setIsSubmitting(false)
         }
@@ -146,7 +150,7 @@ export default function CreateRecord() {
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 rounded-full -z-10"></div>
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-600 rounded-full -z-10 transition-all duration-300"
                             style={{ width: `${((step - 1) / 3) * 100}%` }}></div>
-                        
+
                         {[1, 2, 3, 4].map((s) => (
                             <div key={s} className={`flex flex-col items-center bg-white p-2 rounded-full ${step >= s ? 'text-blue-600' : 'text-gray-400'}`}>
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300
@@ -226,8 +230,8 @@ export default function CreateRecord() {
                             <div className="mt-8 flex justify-end">
                                 <button
                                     onClick={() => {
-                                        if(!formData.summary || !formData.details) {
-                                            alert("Please fill in the required fields.") 
+                                        if (!formData.summary || !formData.details) {
+                                            alert("Please fill in the required fields.")
                                             return
                                         }
                                         setStep(2)
@@ -251,7 +255,7 @@ export default function CreateRecord() {
                             className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8"
                         >
                             <h2 className="text-lg font-bold text-gray-900 mb-6">Upload Documents</h2>
-                            
+
                             {!file ? (
                                 <div
                                     className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200 cursor-pointer
@@ -327,8 +331,8 @@ export default function CreateRecord() {
                         </motion.div>
                     )}
 
-                     {/* Step 3: Review */}
-                     {step === 3 && (
+                    {/* Step 3: Review */}
+                    {step === 3 && (
                         <motion.div
                             key="step3"
                             initial={{ opacity: 0, x: 20 }}
@@ -337,44 +341,44 @@ export default function CreateRecord() {
                             className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8"
                         >
                             <h2 className="text-lg font-bold text-gray-900 mb-6">Review Record Details</h2>
-                            
+
                             <div className="space-y-6">
                                 <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200 space-y-4">
-                                     <div className="grid grid-cols-2 gap-4">
-                                         <div>
-                                             <p className="text-xs text-gray-500 font-bold uppercase mb-1">Type</p>
-                                             <p className="font-medium text-gray-900">{formData.type}</p>
-                                         </div>
-                                         <div>
-                                             <p className="text-xs text-gray-500 font-bold uppercase mb-1">Summary</p>
-                                             <p className="font-medium text-gray-900">{formData.summary}</p>
-                                         </div>
-                                     </div>
-                                     <div>
-                                         <p className="text-xs text-gray-500 font-bold uppercase mb-1">Details</p>
-                                         <p className="text-gray-800 text-sm leading-relaxed">{formData.details}</p>
-                                     </div>
-                                     {formData.notes && (
-                                         <div>
-                                             <p className="text-xs text-gray-500 font-bold uppercase mb-1">Notes</p>
-                                             <p className="text-gray-800 text-sm">{formData.notes}</p>
-                                         </div>
-                                     )}
-                                     {file && (
-                                         <div className="pt-4 border-t border-gray-200 mt-4">
-                                             <p className="text-xs text-gray-500 font-bold uppercase mb-2">Attached Document</p>
-                                             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 w-fit">
-                                                 <FileIcon size={20} className="text-blue-500"/>
-                                                 <span className="text-sm font-medium text-gray-700">{file.name}</span>
-                                             </div>
-                                         </div>
-                                     )}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Type</p>
+                                            <p className="font-medium text-gray-900">{formData.type}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Summary</p>
+                                            <p className="font-medium text-gray-900">{formData.summary}</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-bold uppercase mb-1">Details</p>
+                                        <p className="text-gray-800 text-sm leading-relaxed">{formData.details}</p>
+                                    </div>
+                                    {formData.notes && (
+                                        <div>
+                                            <p className="text-xs text-gray-500 font-bold uppercase mb-1">Notes</p>
+                                            <p className="text-gray-800 text-sm">{formData.notes}</p>
+                                        </div>
+                                    )}
+                                    {file && (
+                                        <div className="pt-4 border-t border-gray-200 mt-4">
+                                            <p className="text-xs text-gray-500 font-bold uppercase mb-2">Attached Document</p>
+                                            <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 w-fit">
+                                                <FileIcon size={20} className="text-blue-500" />
+                                                <span className="text-sm font-medium text-gray-700">{file.name}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                
+
                                 <div className="bg-blue-50 p-4 rounded-xl flex gap-3 text-blue-700 text-sm border border-blue-100">
                                     <AlertCircle className="shrink-0" size={20} />
                                     <p>
-                                        By submitting this record, it will be permanently hashed and anchored to the Cardano blockchain. 
+                                        By submitting this record, it will be permanently hashed and anchored to the Cardano blockchain.
                                         This action cannot be undone.
                                     </p>
                                 </div>
@@ -423,7 +427,7 @@ export default function CreateRecord() {
                             <p className="text-gray-600 mb-8">
                                 The medical record has been encrypted, hashed, and anchored to the Cardano blockchain.
                             </p>
-                            
+
                             <div className="grid gap-3">
                                 <button
                                     onClick={() => navigate(`/patients/${patientId}/records`)}

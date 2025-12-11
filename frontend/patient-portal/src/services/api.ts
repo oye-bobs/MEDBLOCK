@@ -71,6 +71,11 @@ class ApiService {
         return response.data
     }
 
+    async updatePatientProfile(data: any) {
+        const response = await this.client.patch('/identity/patient/profile', data)
+        return response.data
+    }
+
     // Medical records endpoints
     async getObservations(patientDid: string) {
         const response = await this.client.get(`/records/observations/patient/${patientDid}`)
@@ -126,6 +131,33 @@ class ApiService {
     // Access log endpoints
     async getAccessLog(patientDid: string) {
         const response = await this.client.get(`/records/access-logs/${patientDid}`)
+        return response.data
+    }
+
+    // Notification endpoints
+    async getNotifications(status?: string) {
+        const params = status ? { status } : {}
+        const response = await this.client.get('/notifications', { params })
+        return response.data
+    }
+
+    async getUnreadNotificationCount() {
+        const response = await this.client.get('/notifications/unread-count')
+        return response.data
+    }
+
+    async markNotificationAsRead(notificationId: string) {
+        const response = await this.client.post(`/notifications/${notificationId}/read`)
+        return response.data
+    }
+
+    async markAllNotificationsAsRead() {
+        const response = await this.client.post('/notifications/read-all')
+        return response.data
+    }
+
+    async deleteNotification(notificationId: string) {
+        const response = await this.client.delete(`/notifications/${notificationId}`)
         return response.data
     }
 }

@@ -1,17 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiService } from '../services/api'
 import { format } from 'date-fns'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Plus, AlertTriangle, Calendar, Clock, CheckCircle, X, FileText, Lock } from 'lucide-react'
+import { Shield, Plus, AlertTriangle, Calendar, Clock, CheckCircle, X, FileText, Lock, QrCode } from 'lucide-react'
 import BackgroundLayer from '../components/BackgroundLayer'
+import { Html5QrcodeScanner } from 'html5-qrcode'
 
 export default function Consent() {
     const queryClient = useQueryClient()
     const [showGrantForm, setShowGrantForm] = useState(false)
+    const [showScanner, setShowScanner] = useState(false)
     const [formData, setFormData] = useState({
-        provider_did: '',
-        duration_hours: 72,
+        providerDid: '',
+        durationHours: 72,
         scope: ['all'],
     })
 
@@ -21,14 +23,22 @@ export default function Consent() {
         refetchInterval: 5000,
     })
 
+    const { data: profile } = useQuery({
+        queryKey: ['profile'],
+        queryFn: () => apiService.getProfile(),
+        staleTime: Infinity
+    })
+
     const grantMutation = useMutation({
         mutationFn: (data: any) => apiService.grantConsent(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['consents'] })
+            queryClient.invalidateQueries({ queryKey: ['pending-consents'] })
             setShowGrantForm(false)
-            setFormData({ provider_did: '', duration_hours: 72, scope: ['all'] })
+            setFormData({ providerDid: '', durationHours: 72, scope: ['all'] })
         },
     })
+
     const { data: pendingConsents, isLoading: loadingPending } = useQuery({
         queryKey: ['pending-consents'],
         queryFn: () => apiService.getPendingConsents(),
@@ -90,224 +100,219 @@ export default function Consent() {
         }
     }
 
+    // QR Scanner Logic
+    useEffect(() => {
+        let scanner: Html5QrcodeScanner | null = null;
+
+        if (showScanner) {
+            scanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                /* verbose= */ false
+            );
+
+            scanner.render(
+                (decodedText: string) => {
+                    const did = decodedText.trim();
+                    if (did.startsWith('did:')) {
+                        setFormData(prev => ({ ...prev, providerDid: did }));
+                        scanner?.clear().then(() => {
+                            setShowScanner(false);
+                            setShowGrantForm(true);
+                        }).catch((err: any) => console.error("Failed to clear scanner", err));
+                    } else {
+                        try {
+                            const parsed = JSON.parse(did);
+                            if (parsed.did && parsed.did.startsWith('did:')) {
+                                setFormData(prev => ({ ...prev, providerDid: parsed.did }));
+                                scanner?.clear().then(() => {
+                                    setShowScanner(false);
+                                    setShowGrantForm(true);
+                                });
+                            } else {
+                                alert('Invalid QR code. Please try again.');
+                            }
+                        } catch (e) {
+                            alert('Invalid QR code. Please ensure it contains a valid DID.');
+                        }
+                    }
+                },
+                (errorMessage: string) => {
+                    // Ignore scan errors
+                }
+            );
+        }
+
+        return () => {
+            if (scanner) {
+                scanner.clear().catch(() => {});
+            }
+        };
+    }, [showScanner]);
+
     return (
         <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-6 relative"
+            className="space-y-6 relative min-h-screen p-4 sm:p-6 lg:p-8 bg-gray-50"
         >
             <BackgroundLayer />
 
             {/* Header */}
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Consent Management</h1>
-                    <p className="text-gray-600 mt-1">
-                        Control who can access your medical records
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Consent Management</h1>
+                    <p className="text-gray-600 mt-1 text-sm sm:text-base">
+                        Control who can access your medical data on the blockchain
                     </p>
                 </div>
-                <button
-                    onClick={() => setShowGrantForm(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-                >
-                    <Plus size={18} />
-                    Grant Consent
-                </button>
-            </motion.div>
-
-            {/* Info Banner */}
-            <motion.div
-                variants={itemVariants}
-                className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-2xl p-6"
-            >
-                <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                        <Lock className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-blue-900">Blockchain-Powered Consent</h3>
-                        <p className="mt-1 text-sm text-blue-800/80 leading-relaxed">
-                            All consent grants are recorded as smart contracts on the Cardano
-                            blockchain. They automatically expire after the specified duration and
-                            can be revoked at any time.
-                        </p>
-                    </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={() => setShowScanner(true)}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 flex items-center justify-center gap-2 shadow-sm transition-all w-full sm:w-auto"
+                    >
+                        <QrCode size={18} />
+                        Scan Provider QR
+                    </button>
+                    <button
+                        onClick={() => setShowGrantForm(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-md transition-all w-full sm:w-auto"
+                    >
+                        <Plus size={18} />
+                        Grant Access
+                    </button>
                 </div>
             </motion.div>
 
-            {/* Pending Requests */}
-            <motion.div
-                variants={itemVariants}
-                className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-amber-200/50 p-6 sm:p-8 mb-6"
-            >
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <Clock className="text-amber-600" size={20} />
-                    Pending Requests
-                </h2>
-
-                {loadingPending ? (
-                    <div className="flex flex-col items-center justify-center py-6 gap-3">
-                        <div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="grid grid-cols-1 gap-6 md:gap-8">
+                {/* Pending Requests */}
+                <motion.div variants={itemVariants} className="space-y-4 bg-white rounded-2xl shadow-md p-4 sm:p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Clock className="text-orange-500" size={20} />
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Pending Requests</h2>
                     </div>
-                ) : (Array.isArray(pendingConsents) ? pendingConsents : []).length > 0 ? (
-                    <div className="grid gap-4">
-                        {(Array.isArray(pendingConsents) ? pendingConsents : []).map((request: any) => (
-                            <motion.div
-                                key={request.id}
-                                layout
-                                className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm"
-                            >
-                                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <div className="flex items-start gap-4">
-                                        <div className="bg-amber-100 p-3 rounded-xl">
-                                            <AlertTriangle className="w-6 h-6 text-amber-600" />
-                                        </div>
+                    {loadingPending ? (
+                        <div className="flex justify-center items-center min-h-[200px]">
+                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    ) : (pendingConsents?.length || 0) > 0 ? (
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                            {pendingConsents?.map((req: any) => (
+                                <motion.div 
+                                    key={req.id} 
+                                    layout 
+                                    className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all"
+                                >
+                                    <div className="flex flex-col sm:flex-row justify-between items-start mb-3 gap-3">
                                         <div>
-                                            <h3 className="font-bold text-gray-900 text-lg">
-                                                Access Request
-                                            </h3>
-                                            <p className="text-gray-600 text-sm mt-1">
-                                                Provider <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-xs">{request.practitioner?.did}</span> is requesting access.
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                                                <Calendar size={12} />
-                                                <span>Requested: {new Date(request.createdAt).toLocaleDateString()}</span>
-                                            </div>
+                                            <h3 className="font-semibold text-gray-900 text-base">{req.providerName || req.requestor || 'Healthcare Provider'}</h3>
+                                            <p className="text-xs text-gray-500 font-mono mt-1 truncate max-w-[300px]">{req.providerDid || req.requestor}</p>
+                                        </div>
+                                        <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">Pending</span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
+                                        <div className="flex items-center gap-1.5">
+                                            <FileText size={14} />
+                                            <span>Full Access</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Calendar size={14} />
+                                            <span>{req.requestDate ? format(new Date(req.requestDate), 'MMM d, yyyy') : 'No Date'}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 w-full md:w-auto">
+                                    <div className="flex flex-col sm:flex-row gap-2">
                                         <button
-                                            onClick={() => rejectMutation.mutate(request.id)}
-                                            className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors flex-1 md:flex-none"
+                                            onClick={() => rejectMutation.mutate(req.id)}
+                                            className="flex-1 py-2 px-3 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 border border-gray-300 transition-all"
                                         >
                                             Reject
                                         </button>
                                         <button
-                                            onClick={() => approveMutation.mutate(request.id)}
-                                            className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-xl text-sm font-medium transition-colors shadow-sm flex-1 md:flex-none"
+                                            onClick={() => approveMutation.mutate(req.id)}
+                                            className="flex-1 py-2 px-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-md transition-all"
                                         >
-                                            Approve Access
+                                            Approve
                                         </button>
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-gray-500">
-                        <p>No pending requests.</p>
-                    </div>
-                )}
-            </motion.div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center min-h-[200px] flex flex-col justify-center">
+                            <CheckCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500 text-sm">No pending requests</p>
+                        </div>
+                    )}
+                </motion.div>
 
-            {/* Active Consents */}
-            <motion.div
-                variants={itemVariants}
-                className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 p-6 sm:p-8 min-h-[400px]"
-            >
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <Shield className="text-blue-600" size={20} />
-                    Active Consents
-                </h2>
-
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-gray-500 text-sm">Loading consents...</p>
+                {/* Active Consents */}
+                <motion.div variants={itemVariants} className="space-y-4 bg-white rounded-2xl shadow-md p-4 sm:p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Shield className="text-green-600" size={20} />
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Active Consents</h2>
                     </div>
-                ) : (Array.isArray(consents) ? consents : (consents?.consents || [])).length > 0 ? (
-                    <div className="grid gap-4">
-                        {(Array.isArray(consents) ? consents : (consents?.consents || [])).map((consent: any, index: number) => (
-                            <motion.div
-                                key={consent.id || index}
-                                layout
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md hover:border-blue-200 transition-all group"
-                            >
-                                <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-                                    <div className="flex items-start gap-4 flex-1">
-                                        <div className="bg-green-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
-                                            <CheckCircle className="w-6 h-6 text-green-600" />
-                                        </div>
-                                        <div className="flex-1 space-y-3">
+
+                    {isLoading ? (
+                        <div className="flex justify-center items-center min-h-[200px]">
+                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    ) : (consents?.length || 0) > 0 ? (
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                            {consents?.map((consent: any) => (
+                                <motion.div 
+                                    key={consent.id} 
+                                    layout 
+                                    className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all"
+                                >
+                                    <div className="flex flex-col sm:flex-row justify-between items-start mb-3 gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
+                                                {(consent.providerName || 'HP').substring(0, 2).toUpperCase()}
+                                            </div>
                                             <div>
-                                                <h3 className="font-bold text-gray-900 text-lg">
-                                                    Provider Access
-                                                </h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
-                                                    <span className="text-xs text-gray-400">•</span>
-                                                    <span className="text-xs text-gray-500 font-mono">{(consent.id || '').substring(0, 8)}...</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                                <div>
-                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">Provider DID</span>
-                                                    <p className="font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 break-all">
-                                                        {consent.provider_did || consent.practitioner?.did || 'Unknown'}
-                                                    </p>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2 text-gray-600">
-                                                        <Calendar size={14} />
-                                                        <span>Granted: {(() => {
-                                                            const dateVal = consent.grantedAt || consent.granted_at || new Date();
-                                                            try { return format(new Date(dateVal), 'MMM d, yyyy'); } catch { return 'N/A'; }
-                                                        })()}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-gray-600">
-                                                        <Clock size={14} />
-                                                        <span>Expires: {(() => {
-                                                            const dateVal = consent.expiresAt || consent.expires_at;
-                                                            try { return dateVal ? format(new Date(dateVal), 'MMM d, yyyy') : 'Never'; } catch { return 'N/A'; }
-                                                        })()}</span>
-                                                    </div>
+                                                <h3 className="font-semibold text-gray-900 text-base">{consent.providerName || 'Healthcare Provider'}</h3>
+                                                <div className="flex items-center gap-1.5 text-xs text-green-600 mt-0.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                    Active
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div className="flex flex-col items-end gap-3 w-full lg:w-auto pl-0 lg:pl-4 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0">
                                         <button
                                             onClick={() => handleRevoke(consent.id)}
-                                            disabled={revokeMutation.isPending}
-                                            className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-medium transition-colors w-full lg:w-auto"
+                                            className="px-3 py-1 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors"
+                                            title="Revoke Access"
+                                            aria-label="Revoke Access"
                                         >
-                                            Revoke Access
+                                            Revoke
                                         </button>
-                                        <div className="text-xs text-right space-y-1">
-                                            <p className="text-gray-400">Smart Contract</p>
-                                            <p className="font-mono text-gray-500 text-[10px] break-all max-w-[150px]">
-                                                {consent.smart_contract_address || 'Not Deployed'}
-                                            </p>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm text-gray-600 gap-2 sm:gap-0 border border-gray-200">
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={14} className="text-gray-400" />
+                                            <span>Expires {consent.expiryDate ? format(new Date(consent.expiryDate), 'MMM d, p') : 'Never'}</span>
+                                        </div>
+                                        <div className="font-medium text-gray-900">
+                                            {consent.scope?.join(', ') || 'Full Access'}
                                         </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                            <Shield className="w-10 h-10 text-gray-300" />
+                                </motion.div>
+                            ))}
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">
-                            No Active Consents
-                        </h3>
-                        <p className="text-gray-500 max-w-sm">
-                            You haven't granted access to any healthcare providers yet. Click "Grant Consent" to get started.
-                        </p>
-                    </div>
-                )}
-            </motion.div>
+                    ) : (
+                        <div className="text-center min-h-[200px] flex flex-col justify-center">
+                            <Lock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500 text-sm">No active consents</p>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
 
             {/* Grant Consent Modal */}
             <AnimatePresence>
                 {showGrantForm && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -319,48 +324,49 @@ export default function Consent() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 relative z-10 shadow-2xl"
+                            className="bg-white rounded-2xl max-w-md w-full p-6 relative z-10 shadow-xl"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Grant Consent</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">Grant Consent</h2>
                                     <p className="text-gray-500 text-sm mt-1">Authorize a provider to access your records</p>
                                 </div>
                                 <button
                                     onClick={() => setShowGrantForm(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                    aria-label="Close"
                                 >
                                     <X size={20} className="text-gray-500" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleGrant} className="space-y-5">
+                            <form onSubmit={handleGrant} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Provider DID
                                     </label>
                                     <input
                                         type="text"
                                         required
-                                        value={formData.provider_did}
+                                        value={formData.providerDid}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, provider_did: e.target.value })
+                                            setFormData({ ...formData, providerDid: e.target.value })
                                         }
                                         placeholder="did:prism:..."
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-mono text-sm"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                                     />
-                                    <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                         <Shield size={12} />
                                         Enter the decentralized identifier of the healthcare provider
                                     </p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Duration
                                     </label>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-2">
                                         {[
                                             { label: '24 Hours', value: 24 },
                                             { label: '3 Days', value: 72 },
@@ -370,10 +376,10 @@ export default function Consent() {
                                             <button
                                                 key={option.value}
                                                 type="button"
-                                                onClick={() => setFormData({ ...formData, duration_hours: option.value })}
-                                                className={`py-2.5 px-4 rounded-xl text-sm font-medium border transition-all ${formData.duration_hours === option.value
-                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                                onClick={() => setFormData({ ...formData, durationHours: option.value })}
+                                                className={`py-2 px-3 rounded-lg text-sm font-medium border transition-all ${formData.durationHours === option.value
+                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-500 hover:bg-blue-50'
                                                     }`}
                                             >
                                                 {option.label}
@@ -382,32 +388,70 @@ export default function Consent() {
                                     </div>
                                 </div>
 
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                                    <p className="text-sm text-amber-800 leading-relaxed">
-                                        <strong>Note:</strong> This will create a smart contract on the
-                                        Cardano blockchain granting time-bound access to your medical
-                                        records.
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                    <p className="text-sm text-yellow-800">
+                                        <strong>Note:</strong> This will create a smart contract on the Cardano blockchain granting time-bound access to your medical records.
                                     </p>
                                 </div>
 
-                                <div className="flex gap-3 pt-2">
+                                <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                     <button
                                         type="button"
                                         onClick={() => setShowGrantForm(false)}
-                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                                        className="flex-1 py-2 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={grantMutation.isPending}
-                                        className="flex-1 py-3 px-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        className="flex-1 py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
                                     >
-                                        {grantMutation.isPending ? 'Granting...' : 'Grant Access'}
+                                        {grantMutation.isPending ? 'Sending...' : 'Send Request'}
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* QR Scanner Modal */}
+            <AnimatePresence>
+                {showScanner && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setShowScanner(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-2xl max-w-md w-full p-6 relative z-10 shadow-xl flex flex-col items-center"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => setShowScanner(false)}
+                                className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label="Close"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+
+                            <h2 className="text-xl font-bold text-gray-900 mb-2">Scan QR Code</h2>
+                            <p className="text-gray-500 text-sm mb-6 text-center">
+                                Scan the provider's QR code to automatically fill their DID.
+                            </p>
+
+                            <div 
+                                id="reader" 
+                                className="w-full max-w-[400px] rounded-lg overflow-hidden border border-gray-300 bg-gray-50 aspect-square min-h-[250px]" 
+                            />
                         </motion.div>
                     </div>
                 )}

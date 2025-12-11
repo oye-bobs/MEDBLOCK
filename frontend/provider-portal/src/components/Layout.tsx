@@ -4,6 +4,7 @@ import { AuthContext } from '../App'
 import Sidebar from './Sidebar'
 import { Menu, Stethoscope } from 'lucide-react'
 import BackgroundLayer from './BackgroundLayer'
+import NotificationBell from './NotificationBell'
 
 export default function Layout() {
     const { isAuthenticated } = useContext(AuthContext)
@@ -46,7 +47,7 @@ export default function Layout() {
                             <span className="font-bold text-lg text-blue-600">MEDBLOCK</span>
                         </div>
                     </div>
-                    <div className="w-8" /> {/* Spacer for balance */}
+                    <NotificationBell />
                 </div>
 
                 <div className="flex-1 flex flex-col">

@@ -165,6 +165,16 @@ export default function Register() {
     const handleDisconnect = async () => {
         await disconnect()
         setStep('connect')
+        setFormData({
+            givenName: '',
+            familyName: '',
+            gender: 'unknown',
+            birthDate: '',
+            email: '',
+            phone: '',
+            acceptTerms: false,
+            acceptData: false,
+        })
     }
 
     const handleSubmit = async (e: React.FormEvent) => {

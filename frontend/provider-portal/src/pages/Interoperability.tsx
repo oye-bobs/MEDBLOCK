@@ -9,13 +9,47 @@ export default function Interoperability() {
     const queryClient = useQueryClient()
     const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>('incoming')
 
-    const { data: requests = [], isLoading: loading } = useQuery({
-        queryKey: ['interop-requests', activeTab],
+    // Fetch profile to get current DID
+    const { data: profile } = useQuery({
+        queryKey: ['profile'],
+        queryFn: () => apiService.getProfile(),
+        staleTime: Infinity
+    })
+
+    // Fetch pending requests (incoming for providers, outgoing for patients)
+    const { data: pendingRequests = [], isLoading: loadingPending } = useQuery({
+        queryKey: ['pending-requests'],
         queryFn: async () => {
             return apiService.getPendingRequests();
         },
         refetchInterval: 5000
     })
+
+    // Fetch active consents (outgoing for providers - requests they've made that were approved)
+    const { data: activeConsents = [], isLoading: loadingActive } = useQuery({
+        queryKey: ['active-consents'],
+        queryFn: async () => {
+            return apiService.getActiveConsents();
+        },
+        refetchInterval: 5000
+    })
+
+    // Determine which data to show based on active tab
+    // Incoming: Pending requests NOT initiated by me (so initiated by Patient)
+    // Outgoing: Pending requests initiated by me + Active consents (my approved requests)
+
+    const myDid = profile?.did;
+
+    const incomingRequests = pendingRequests.filter((r: any) => r.initiatedBy && r.initiatedBy !== myDid);
+
+    // For outgoing, we combine pending requests initiated by me, and active consents (which I presumably initiated or at least hold)
+    const outgoingRequests = [
+        ...pendingRequests.filter((r: any) => r.initiatedBy === myDid),
+        ...activeConsents
+    ];
+
+    const requests = activeTab === 'incoming' ? incomingRequests : outgoingRequests;
+    const loading = activeTab === 'incoming' ? loadingPending : loadingActive
 
     const [showModal, setShowModal] = useState(false)
     const [formData, setFormData] = useState({
@@ -28,7 +62,8 @@ export default function Interoperability() {
     const requestMutation = useMutation({
         mutationFn: (data: any) => apiService.createInteroperabilityRequest(data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['interop-requests'] })
+            queryClient.invalidateQueries({ queryKey: ['pending-requests'] })
+            queryClient.invalidateQueries({ queryKey: ['active-consents'] })
             setShowModal(false)
             setFormData({ facility: '', patientDid: '', type: 'General Summary' })
             notify.success('Interoperability request sent successfully', 'Request Sent')
@@ -44,6 +79,41 @@ export default function Interoperability() {
             patientDid: formData.patientDid,
             type: formData.type
         })
+    }
+
+    const approveMutation = useMutation({
+        mutationFn: (consentId: string) => apiService.approveConsentRequest(consentId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending-requests'] })
+            queryClient.invalidateQueries({ queryKey: ['active-consents'] })
+            notify.success('Consent request approved', 'Success')
+        },
+        onError: () => {
+            notify.error('Failed to approve request', 'Error')
+        }
+    })
+
+    const rejectMutation = useMutation({
+        mutationFn: (consentId: string) => apiService.rejectConsentRequest(consentId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending-requests'] })
+            notify.success('Consent request rejected', 'Success')
+        },
+        onError: () => {
+            notify.error('Failed to reject request', 'Error')
+        }
+    })
+
+    const handleApprove = (consentId: string) => {
+        if (confirm('Are you sure you want to approve this request?')) {
+            approveMutation.mutate(consentId)
+        }
+    }
+
+    const handleReject = (consentId: string) => {
+        if (confirm('Are you sure you want to reject this request?')) {
+            rejectMutation.mutate(consentId)
+        }
     }
 
     // Future integration: Fetch actual interoperability requests
@@ -176,8 +246,13 @@ export default function Interoperability() {
             {/* Request List */}
             <AnimatePresence>
                 <div className="space-y-4">
-                    {requests.length > 0 ? (
-                        requests.map((req) => (
+                    {loading ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p>Loading requests...</p>
+                        </div>
+                    ) : requests.length > 0 ? (
+                        requests.map((req: any) => (
                             <motion.div
                                 key={req.id}
                                 initial={{ opacity: 0, y: 10 }}
@@ -194,11 +269,13 @@ export default function Interoperability() {
                                         <h3 className="font-bold text-gray-900">
                                             {activeTab === 'outgoing'
                                                 ? (req.patient?.name?.[0]?.text || req.patient?.did || 'Unknown Patient')
-                                                : (req.practitioner?.hospitalName || req.practitioner?.name?.[0]?.text || req.practitioner?.did || 'Unknown Facility')}
+                                                : (req.patient?.name?.[0]?.text || req.patient?.did || 'Unknown Patient')}
                                         </h3>
                                         <p className="text-sm text-gray-600 mt-1">
-                                            Requesting <span className="font-medium text-gray-900">{Array.isArray(req.scope) ? req.scope.join(', ') : req.scope}</span>
-                                            {activeTab === 'outgoing' && ` for ${req.patient?.did && req.patient.did.substring(0, 15)}...`}
+                                            {activeTab === 'outgoing'
+                                                ? `Access granted for: ${Array.isArray(req.scope) ? req.scope.join(', ') : req.scope || 'all'}`
+                                                : `Requesting: ${Array.isArray(req.scope) ? req.scope.join(', ') : req.scope || 'all'}`
+                                            }
                                         </p>
                                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                                             <Clock size={14} />
@@ -208,20 +285,32 @@ export default function Interoperability() {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    {req.status === 'pending' ? (
+                                    {activeTab === 'incoming' && req.status === 'pending' ? (
                                         <>
-                                            <button className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
+                                            <button
+                                                onClick={() => handleReject(req.id)}
+                                                disabled={rejectMutation.isPending}
+                                                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                                            >
                                                 Reject
                                             </button>
-                                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm">
+                                            <button
+                                                onClick={() => handleApprove(req.id)}
+                                                disabled={approveMutation.isPending}
+                                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
+                                            >
                                                 Approve & Share
                                             </button>
                                         </>
                                     ) : (
-                                        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${req.status === 'approved' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${req.status === 'active' || req.status === 'approved'
+                                                ? 'bg-green-50 text-green-700'
+                                                : req.status === 'revoked' || req.status === 'rejected'
+                                                    ? 'bg-red-50 text-red-700'
+                                                    : 'bg-gray-50 text-gray-700'
                                             }`}>
-                                            {req.status === 'approved' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                            <span className="capitalize">{req.status}</span>
+                                            {req.status === 'active' || req.status === 'approved' ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                            <span className="capitalize">{req.status || 'Active'}</span>
                                         </div>
                                     )}
                                 </div>

@@ -38,15 +38,13 @@ export class DidService {
                 createdAt: new Date().toISOString(),
             };
         } catch (error) {
-            this.logger.error(`Failed to create DID: ${error.message}`);
-
             // Fallback to mock DID for various blockchain-related errors
             if (
                 error.message.includes('Could not load Aiken contract') ||
                 error.message.includes('Lucid not initialized') ||
                 error.message.includes('Blockfrost')
             ) {
-                this.logger.warn('Falling back to mock DID due to blockchain unavailability.');
+                this.logger.warn(`Falling back to mock DID due to blockchain unavailability: ${error.message}`);
                 const didSuffix = Math.random().toString(36).substring(2, 15);
                 const timestamp = Date.now();
                 return {
@@ -58,6 +56,8 @@ export class DidService {
                     createdAt: new Date().toISOString(),
                 };
             }
+            
+            this.logger.error(`Failed to create DID: ${error.message}`);
             throw error;
         }
     }

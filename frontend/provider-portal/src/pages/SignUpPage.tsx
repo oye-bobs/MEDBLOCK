@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../App';
 import BackgroundLayer from '../components/BackgroundLayer';
-import { Shield, User, Mail, Lock, Building, Stethoscope, ArrowLeft, ArrowRight, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Shield, User, Mail, Lock, Building, Stethoscope, ArrowLeft, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiService } from '../services/api';
 import Swal from 'sweetalert2';
@@ -14,7 +14,7 @@ const SignUpPage: React.FC = () => {
     const [step, setStep] = useState<'form' | 'generating' | 'complete'>('form');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [generatedDID, setGeneratedDID] = useState('');
+
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -114,7 +114,7 @@ const SignUpPage: React.FC = () => {
                 password: formData.password
             });
 
-            setGeneratedDID(response.did);
+
             setStep('complete');
 
             // Show success message

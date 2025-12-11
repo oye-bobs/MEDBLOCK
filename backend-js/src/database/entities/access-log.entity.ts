@@ -53,7 +53,7 @@ export class AccessLog {
     @CreateDateColumn()
     accessedAt: Date;
 
-    @Column({ length: 255, unique: true })
+    @Column({ length: 255, nullable: true })
     blockchainTxId: string;
 
     @Column({ type: 'text', nullable: true })

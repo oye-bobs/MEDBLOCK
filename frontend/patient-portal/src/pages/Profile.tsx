@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
 import {
@@ -15,7 +15,8 @@ import {
     Wallet,
     LogOut,
     Download,
-    CheckCircle
+    CheckCircle,
+    Copy
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
@@ -26,11 +27,58 @@ import BackgroundLayer from '../components/BackgroundLayer'
 export default function Profile() {
     const { logout, did } = useAuth()
     const navigate = useNavigate()
+    const queryClient = useQueryClient()
     const [activeTab, setActiveTab] = useState('general')
+
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        gender: 'other',
+        birthDate: '',
+        email: '',
+        phone: '',
+        address: ''
+    })
 
     const { data: profile, isLoading } = useQuery({
         queryKey: ['profile'],
         queryFn: () => apiService.getProfile(),
+    })
+
+    useEffect(() => {
+        if (profile) {
+            setFormData({
+                firstName: profile.name?.[0]?.given?.[0] || profile.name?.[0]?.text?.split(' ')[0] || '',
+                lastName: profile.name?.[0]?.family || profile.name?.[0]?.text?.split(' ').slice(1).join(' ') || '',
+                gender: profile.gender || 'other',
+                birthDate: profile.birthDate ? format(new Date(profile.birthDate), 'yyyy-MM-dd') : '',
+                email: profile.telecom?.find((t: any) => t.system === 'email')?.value || '',
+                phone: profile.telecom?.find((t: any) => t.system === 'phone')?.value || '',
+                address: profile.address?.[0]?.text || ''
+            })
+        }
+    }, [profile])
+
+
+    const updateMutation = useMutation({
+        mutationFn: apiService.updatePatientProfile.bind(apiService),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['profile'] })
+            Swal.fire({
+                icon: 'success',
+                title: 'Profile Updated',
+                text: 'Your profile has been successfully updated.',
+                confirmButtonColor: '#3b82f6'
+            })
+        },
+        onError: () => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Update Failed',
+                text: 'Failed to update profile. Please try again.',
+                confirmButtonColor: '#3b82f6'
+            })
+        }
     })
 
     const handleLogout = async () => {
@@ -68,13 +116,26 @@ export default function Profile() {
         URL.revokeObjectURL(url)
     }
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
     const handleSave = () => {
-        Swal.fire({
-            icon: 'info',
-            title: 'Feature Coming Soon',
-            text: 'Profile updates will be written to the blockchain in the next release.',
-            confirmButtonColor: '#3b82f6'
-        })
+        updateMutation.mutate(formData as any)
+    }
+
+    const copyDid = () => {
+        if (profile?.did) {
+            navigator.clipboard.writeText(profile.did)
+            Swal.fire({
+                icon: 'success',
+                title: 'DID Copied',
+                showConfirmButton: false,
+                timer: 1500,
+                toast: true,
+                position: 'top-end'
+            })
+        }
     }
 
     if (isLoading) {
@@ -85,24 +146,8 @@ export default function Profile() {
         )
     }
 
-    // Safe accessors for profile data
-    const getGivenName = () => {
-        if (!profile?.name?.[0]) return '';
-        if (profile.name[0].text) return profile.name[0].text; // Fallback if text is used
-        const given = profile.name[0].given;
-        return Array.isArray(given) ? given.join(' ') : given || '';
-    }
-
-    const getFamilyName = () => profile?.name?.[0]?.family || '';
-    const getEmail = () => profile?.telecom?.find((t: any) => t.system === 'email')?.value || '';
-    const getPhone = () => profile?.telecom?.find((t: any) => t.system === 'phone')?.value || '';
-    const getGender = () => profile?.gender || '';
-    const getBirthDate = () => profile?.birthDate ? format(new Date(profile.birthDate), 'yyyy-MM-dd') : '';
-    const getAddress = () => {
-        const addr = profile?.address?.[0];
-        if (!addr) return '';
-        return [addr.line?.join(' '), addr.city, addr.state, addr.country].filter(Boolean).join(', ');
-    }
+    // Accessors for display (using state for immediate feedback or query data)
+    // We already synced state, so let's stick to state for inputs
 
     return (
         <motion.div
@@ -166,20 +211,23 @@ export default function Profile() {
                                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
                                     <div className="relative">
                                         <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center text-blue-700 text-3xl font-bold shadow-inner">
-                                            {getGivenName().charAt(0) || <User size={40} />}
+                                            {formData.firstName.charAt(0) || <User size={40} />}
                                         </div>
                                         <div className="absolute bottom-0 right-0 bg-green-500 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center">
                                             <CheckCircle size={12} className="text-white" />
                                         </div>
                                     </div>
                                     <div className="text-center md:text-left">
-                                        <h3 className="text-2xl font-bold text-gray-900">{getGivenName()} {getFamilyName()}</h3>
+                                        <h3 className="text-2xl font-bold text-gray-900">{formData.firstName} {formData.lastName}</h3>
                                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-1 text-sm text-gray-500">
                                             <span className="flex items-center gap-1">
                                                 <User size={14} /> Patient
                                             </span>
                                             <span className="hidden md:inline">•</span>
-                                            <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{profile?.did}</span>
+                                            <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs flex items-center gap-2 cursor-pointer hover:bg-gray-200 transition-colors" onClick={copyDid}>
+                                                {profile?.did ? `${profile.did.substring(0, 20)}...` : ''}
+                                                <Copy size={12} />
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -191,19 +239,36 @@ export default function Profile() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                                             <div className="relative">
                                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <input type="text" defaultValue={getGivenName()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                                <input
+                                                    name="firstName"
+                                                    type="text"
+                                                    value={formData.firstName}
+                                                    onChange={handleInputChange}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                                             <div className="relative">
                                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <input type="text" defaultValue={getFamilyName()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                                <input
+                                                    name="lastName"
+                                                    type="text"
+                                                    value={formData.lastName}
+                                                    onChange={handleInputChange}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                                            <select defaultValue={getGender()} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize">
+                                            <select
+                                                name="gender"
+                                                value={formData.gender}
+                                                onChange={handleInputChange}
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize"
+                                            >
                                                 <option value="male">Male</option>
                                                 <option value="female">Female</option>
                                                 <option value="other">Other</option>
@@ -213,7 +278,13 @@ export default function Profile() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                                             <div className="relative">
                                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <input type="date" defaultValue={getBirthDate()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                                <input
+                                                    name="birthDate"
+                                                    type="date"
+                                                    value={formData.birthDate}
+                                                    onChange={handleInputChange}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -224,30 +295,56 @@ export default function Profile() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                                             <div className="relative">
                                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <input type="email" defaultValue={getEmail()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                                <input
+                                                    name="email"
+                                                    type="email"
+                                                    value={formData.email}
+                                                    onChange={handleInputChange}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                                             <div className="relative">
                                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <input type="tel" defaultValue={getPhone()} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                                <input
+                                                    name="phone"
+                                                    type="tel"
+                                                    value={formData.phone}
+                                                    onChange={handleInputChange}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                />
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                                             <div className="relative">
                                                 <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
-                                                <textarea defaultValue={getAddress()} rows={3} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+                                                <textarea
+                                                    name="address"
+                                                    value={formData.address}
+                                                    onChange={handleInputChange}
+                                                    rows={3}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                                ></textarea>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="pt-6 border-t border-gray-100 flex justify-end">
-                                    <button onClick={handleSave} className="btn btn-primary flex items-center gap-2">
-                                        <Save size={18} />
-                                        Save Changes
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={updateMutation.isPending}
+                                        className="btn btn-primary flex items-center gap-2 disabled:opacity-70"
+                                    >
+                                        {updateMutation.isPending ? (
+                                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                        ) : (
+                                            <Save size={18} />
+                                        )}
+                                        {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </motion.div>

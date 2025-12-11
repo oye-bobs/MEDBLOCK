@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenEx
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConsentRecord, ConsentStatus, Patient, Practitioner } from '../database/entities';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ConsentService {
@@ -14,6 +15,7 @@ export class ConsentService {
         private patientRepo: Repository<Patient>,
         @InjectRepository(Practitioner)
         private practitionerRepo: Repository<Practitioner>,
+        private notificationsService: NotificationsService,
     ) { }
 
     async grantConsent(
@@ -22,6 +24,10 @@ export class ConsentService {
         scope: string[] = ['all'],
         durationHours: number = 72,
     ): Promise<ConsentRecord> {
+        if (!providerDid) {
+            throw new BadRequestException('Provider DID is required');
+        }
+
         // 1. Verify Patient
         const patient = await this.patientRepo.findOne({ where: { did: patientDid } });
         if (!patient) throw new NotFoundException('Patient not found');
@@ -30,27 +36,54 @@ export class ConsentService {
         const provider = await this.practitionerRepo.findOne({ where: { did: providerDid } });
         if (!provider) throw new NotFoundException('Provider not found');
 
-        // 3. Calculate Expiration
+        // 3. Create PENDING Consent Request
+        // Instead of directly creating ACTIVE consent, we now create a PENDING request
+        // initiated by the patient. The provider must approve it.
+
+        const existing = await this.consentRepo.findOne({
+            where: {
+                patient: { id: patient.id },
+                practitioner: { id: provider.id },
+                status: ConsentStatus.PENDING,
+            }
+        });
+
+        if (existing) {
+            // Update existing request
+            existing.scope = scope;
+            existing.initiatedBy = patientDid;
+            existing.updatedAt = new Date();
+            return this.consentRepo.save(existing);
+        }
+
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + durationHours);
-
-        // 4. Create Consent Record
-        // TODO: Deploy Plutus smart contract and get address
-        const mockContractAddress = `addr_test1_consent_${Date.now()}`;
-        const mockTxId = `tx_consent_${Date.now()}`;
 
         const consent = this.consentRepo.create({
             patient,
             practitioner: provider,
-            status: ConsentStatus.ACTIVE,
+            status: ConsentStatus.PENDING, // Changed to PENDING
             scope,
+            initiatedBy: patientDid, // Mark as initiated by patient
             expiresAt,
-            smartContractAddress: mockContractAddress,
-            consentTxId: mockTxId,
+            smartContractAddress: 'PENDING',
+            consentTxId: `req_${Date.now()}`,
         });
 
         const saved = await this.consentRepo.save(consent);
-        this.logger.log(`Consent granted: ${patientDid} -> ${providerDid}`);
+        this.logger.log(`Consent requested by patient: ${patientDid} -> ${provider.did}`);
+
+        // Notify provider about the incoming request
+        try {
+            await this.notificationsService.notifyPatientInteroperabilityRequest(
+                provider.did, // Use confirmed provider DID
+                patientDid,
+                saved.id,
+                patient.name?.[0]?.text || 'Patient',
+            );
+        } catch (error) {
+            this.logger.error(`Failed to notify provider: ${error.message}`);
+        }
 
         return saved;
     }
@@ -80,24 +113,28 @@ export class ConsentService {
         // Check if user is patient
         const patient = await this.patientRepo.findOne({ where: { did: userDid } });
         if (patient) {
+            // Patients can see all their consents
             return this.consentRepo.find({
                 where: {
                     patient: { id: patient.id },
                     status: ConsentStatus.ACTIVE,
                 },
                 relations: ['practitioner'],
+                order: { createdAt: 'DESC' }
             });
         }
 
         // Check if user is provider
         const provider = await this.practitionerRepo.findOne({ where: { did: userDid } });
         if (provider) {
+            // Providers can only see consents where they are the practitioner
             return this.consentRepo.find({
                 where: {
                     practitioner: { id: provider.id },
                     status: ConsentStatus.ACTIVE,
                 },
                 relations: ['patient'],
+                order: { createdAt: 'DESC' }
             });
         }
 
@@ -141,6 +178,7 @@ export class ConsentService {
             practitioner: provider,
             status: ConsentStatus.PENDING,
             scope,
+            initiatedBy: providerDid, // Mark as initiated by provider
             // Temp placeholders for pending
             smartContractAddress: 'PENDING',
             consentTxId: `req_${Date.now()}`,
@@ -150,6 +188,19 @@ export class ConsentService {
 
         const saved = await this.consentRepo.save(consent);
         this.logger.log(`Consent requested: ${providerDid} -> ${patientDid}`);
+
+        // Send notification to patient
+        try {
+            await this.notificationsService.notifyConsentRequest(
+                patientDid,
+                providerDid,
+                saved.id,
+                provider.name?.[0]?.text,
+            );
+        } catch (error) {
+            this.logger.error(`Failed to send consent request notification: ${error.message}`);
+        }
+
         return saved;
     }
 
@@ -181,14 +232,26 @@ export class ConsentService {
         return [];
     }
 
-    async approveConsent(consentId: string, patientDid: string): Promise<ConsentRecord> {
+    async approveConsent(consentId: string, userDid: string): Promise<ConsentRecord> {
         const consent = await this.consentRepo.findOne({
             where: { id: consentId },
             relations: ['patient', 'practitioner']
         });
 
         if (!consent) throw new NotFoundException('Consent request not found');
-        if (consent.patient.did !== patientDid) throw new ForbiddenException('Not authorized to approve this request');
+
+        // Security check: The user approving must NOT be the one who initiated it
+        if (consent.initiatedBy === userDid) {
+            throw new ForbiddenException('You cannot approve your own request');
+        }
+
+        // Verify the user is either the patient or the provider involved
+        const isPatient = consent.patient.did === userDid;
+        const isProvider = consent.practitioner.did === userDid;
+
+        if (!isPatient && !isProvider) {
+            throw new ForbiddenException('Not authorized to approve this request');
+        }
         if (consent.status !== ConsentStatus.PENDING) throw new BadRequestException('Consent is not in pending state');
 
         // Transition to ACTIVE
@@ -204,24 +267,127 @@ export class ConsentService {
         consent.smartContractAddress = `addr_test1_consent_${Date.now()}`;
         consent.consentTxId = `tx_consent_${Date.now()}`;
 
-        return this.consentRepo.save(consent);
+        const updated = await this.consentRepo.save(consent);
+
+
+
+        // Notify the initiator
+        const targetDid = consent.initiatedBy;
+        if (targetDid) {
+            const approverName = isPatient ? consent.patient.name?.[0]?.text : consent.practitioner.name?.[0]?.text;
+            try {
+                if (isProvider) {
+                    // Provider approved Patient's request -> Notify Patient
+                    await this.notificationsService.notifyProviderInteroperabilityApproval(
+                        targetDid, // patient
+                        userDid,   // provider
+                        consentId,
+                        approverName
+                    );
+                } else {
+                    // Patient approved Provider's request -> Notify Provider (existing flow)
+                    await this.notificationsService.notifyConsentApproved(
+                        targetDid, // provider
+                        userDid,   // patient
+                        consentId,
+                        approverName
+                    );
+                }
+            } catch (e) {
+                this.logger.error(`Failed to notify initiator: ${e.message}`);
+            }
+        }
+
+        return updated;
     }
 
-    async rejectConsent(consentId: string, patientDid: string): Promise<ConsentRecord> {
+    async rejectConsent(consentId: string, userDid: string): Promise<ConsentRecord> {
         const consent = await this.consentRepo.findOne({
             where: { id: consentId },
-            relations: ['patient']
+            relations: ['patient', 'practitioner']
         });
 
         if (!consent) throw new NotFoundException('Consent request not found');
-        if (consent.patient.did !== patientDid) throw new ForbiddenException('Not authorized');
+
+        const isPatient = consent.patient.did === userDid;
+        const isProvider = consent.practitioner.did === userDid;
+
+        if (!isPatient && !isProvider) {
+            throw new ForbiddenException('Not authorized');
+        }
 
         // We can either delete it or mark as rejected/revoked.
         // Let's mark Revoked/Rejected to keep history if needed, or just delete. 
         // ConsentStatus has REVOKED. Let's use that or add REJECTED. 
         // For simplicity, let's just delete or use REVOKED.
-        // Step 101 shows REVOKED but not REJECTED. Let's use REVOKED.
+        // ConsentStatus has REVOKED but not REJECTED. Let's use REVOKED.
+
         consent.status = ConsentStatus.REVOKED;
-        return this.consentRepo.save(consent);
+        const updated = await this.consentRepo.save(consent);
+
+        // Notify the initiator that their request was rejected/revoked
+        const targetDid = consent.initiatedBy;
+        if (targetDid) {
+            const rejectorName = isPatient ? consent.patient.name?.[0]?.text : consent.practitioner.name?.[0]?.text;
+            try {
+                if (isProvider) {
+                    // Provider rejected Patient's request -> Notify Patient
+                    // We can reuse notifyConsentRejected but technically it says "A patient has rejected..."
+                    // We might need a generic "RequestRejected" or just update the message dynamically in service
+                    // For now reusing with caveat or better: assume notifyConsentRejected is generic enough if we pass correct name
+
+                    // Actually, let's just make sure the message in notifyConsentRejected is generic or we add a new one.
+                    // Access Request Rejected: "X has rejected your access request."
+                    await this.notificationsService.notifyConsentRejected(
+                        targetDid, // patient
+                        userDid,   // provider
+                        consentId,
+                        rejectorName
+                    );
+                } else {
+
+                    await this.notificationsService.notifyConsentRejected(
+                        targetDid, // provider
+                        userDid,   // patient
+                        consentId,
+                        rejectorName
+                    );
+                }
+            } catch (error) {
+                this.logger.error(`Failed to send consent rejected notification: ${error.message}`);
+            }
+        }
+
+        return updated;
+    }
+
+    async getAllConsents(userDid: string): Promise<ConsentRecord[]> {
+        // Check if user is patient
+        const patient = await this.patientRepo.findOne({ where: { did: userDid } });
+        if (patient) {
+            // Patients can see all their consents (active, pending, revoked)
+            return this.consentRepo.find({
+                where: {
+                    patient: { id: patient.id }
+                },
+                relations: ['practitioner'],
+                order: { createdAt: 'DESC' }
+            });
+        }
+
+        // Check if user is provider
+        const provider = await this.practitionerRepo.findOne({ where: { did: userDid } });
+        if (provider) {
+            // Providers can only see consents where they are the practitioner
+            return this.consentRepo.find({
+                where: {
+                    practitioner: { id: provider.id }
+                },
+                relations: ['patient'],
+                order: { createdAt: 'DESC' }
+            });
+        }
+
+        return [];
     }
 }
