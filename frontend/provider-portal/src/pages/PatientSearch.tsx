@@ -1,27 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, QrCode, User, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { apiService } from '../services/api'
+import ProviderQRModal from '../components/ProviderQRModal'
 
 export default function PatientSearch() {
     const navigate = useNavigate()
     const [searchQuery, setSearchQuery] = useState('')
-    const [searchType, setSearchType] = useState<'id' | 'name' | 'qr'>('id')
+    const [searchType, setSearchType] = useState<'id' | 'name'>('id')
     const [isSearching, setIsSearching] = useState(false)
     const [results, setResults] = useState<any[]>([])
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [showQR, setShowQR] = useState(false)
 
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const performSearch = async (query: string, pageNum: number = 1) => {
         setIsSearching(true)
-        setResults([])
+        if (pageNum === 1) setResults([])
 
         try {
-            const data = await apiService.searchPatients(searchQuery)
-            // Transform data to match UI expected format
-            // Backend returns Patient entity: { id, did, name: [{text: ""}], birthDate, gender, ... }
+            const response = await apiService.searchPatients(query, pageNum)
+            const data = response.data || []
+            const meta = response.meta || { totalPages: 1 }
+
             const mappedResults = data.map((p: any) => {
-                // Helper to format name from FHIR structure
                 const getName = () => {
                     const nameObj = p.name?.[0];
                     if (!nameObj) return 'Unknown';
@@ -32,19 +35,45 @@ export default function PatientSearch() {
                 };
 
                 return {
-                    id: p.did, // Use DID as ID
+                    id: p.did,
                     name: getName(),
                     dob: p.birthDate ? new Date(p.birthDate).toLocaleDateString() : 'N/A',
                     gender: p.gender || 'N/A',
-                    lastVisit: 'N/A' // Not in patient entity yet
+                    lastVisit: 'N/A'
                 };
             })
             setResults(mappedResults)
+            setTotalPages(meta.totalPages)
+            setPage(pageNum)
         } catch (error) {
             console.error('Search failed:', error)
             setResults([])
         } finally {
             setIsSearching(false)
+        }
+    }
+
+    // Auto-search (debounce)
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchQuery.length >= 2) {
+                performSearch(searchQuery, 1)
+            } else if (searchQuery.length === 0) {
+                setResults([])
+            }
+        }, 500)
+
+        return () => clearTimeout(delayDebounceFn)
+    }, [searchQuery])
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault()
+        performSearch(searchQuery, 1)
+    }
+
+    const changePage = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            performSearch(searchQuery, newPage)
         }
     }
 
@@ -60,11 +89,17 @@ export default function PatientSearch() {
                     <h1 className="text-2xl font-bold text-gray-900">Patient Search</h1>
                     <p className="text-gray-600">Locate patient records securely via Patient DID or Name</p>
                 </div>
-                <button className="btn btn-primary flex items-center gap-2">
+                <button
+                    onClick={() => setShowQR(true)}
+                    className="btn btn-primary flex items-center gap-2"
+                >
                     <QrCode size={20} />
-                    Scan QR Code
+                    Show My QR Code
                 </button>
             </div>
+
+            {/* QR Modal */}
+            <ProviderQRModal isOpen={showQR} onClose={() => setShowQR(false)} />
 
             {/* Search Card */}
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-6">
@@ -127,9 +162,9 @@ export default function PatientSearch() {
                                     <div>
                                         <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{patient.name}</h3>
                                         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                                            <span>DID: {patient.id}</span>
+                                            <span className="font-mono text-xs bg-gray-100 rounded px-1">{patient.id.substring(0, 15)}...</span>
                                             <span>•</span>
-                                            <span>{patient.gender}</span>
+                                            <span className="capitalize">{patient.gender}</span>
                                             <span>•</span>
                                             <span>DOB: {patient.dob}</span>
                                         </div>
@@ -144,7 +179,7 @@ export default function PatientSearch() {
                                 </div>
                             </motion.div>
                         ))
-                    ) : searchQuery && !isSearching && (
+                    ) : searchQuery && !isSearching ? (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -156,10 +191,33 @@ export default function PatientSearch() {
                                 <User className="text-gray-400" size={24} />
                             </div>
                             <h3 className="text-gray-900 font-medium">No patients found</h3>
-                            <p className="text-gray-500 text-sm mt-1">Try adjusting your search terms or scan a QR code</p>
+                            <p className="text-gray-500 text-sm mt-1">Try adjusting your search terms</p>
                         </motion.div>
-                    )}
+                    ) : null}
                 </div>
+
+                {/* Pagination Controls */}
+                {results.length > 0 && totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 mt-6">
+                        <button
+                            onClick={() => changePage(page - 1)}
+                            disabled={page === 1 || isSearching}
+                            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-sm text-gray-600 bg-white px-3 py-1 rounded-md border border-gray-100">
+                            Page {page} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => changePage(page + 1)}
+                            disabled={page === totalPages || isSearching}
+                            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </AnimatePresence>
         </motion.div>
     )

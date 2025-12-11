@@ -44,6 +44,9 @@ export class ConsentRecord {
     })
     status: ConsentStatus;
 
+    @Column({ type: 'text', nullable: true })
+    initiatedBy: string;
+
     @Column('simple-json', { default: [] })
     scope: string[];
 

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -12,12 +13,14 @@ import {
   Encounter,
   ConsentRecord,
   AccessLog,
+  Notification,
 } from './database/entities';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { IdentityModule } from './identity/identity.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { RecordsModule } from './records/records.module';
 import { ConsentModule } from './consent/consent.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -38,6 +41,7 @@ import { ConsentModule } from './consent/consent.module';
             Encounter,
             ConsentRecord,
             AccessLog,
+            Notification,
           ],
           synchronize: configService.get<boolean>('DATABASE_SYNCHRONIZE', true),
           logging: configService.get<boolean>('DATABASE_LOGGING', false),
@@ -63,11 +67,13 @@ import { ConsentModule } from './consent/consent.module';
       },
       inject: [ConfigService],
     }),
+    EventEmitterModule.forRoot(),
     BlockchainModule,
     IdentityModule,
     EncryptionModule,
     RecordsModule,
     ConsentModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

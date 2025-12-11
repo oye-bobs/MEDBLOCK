@@ -39,11 +39,16 @@ export class RecordsService {
         const patient = await this.patientRepo.findOne({ where: { did: data.patientDid } });
         if (!patient) throw new NotFoundException('Patient not found');
 
+
         // 2. Validate Practitioner (if applicable)
         let practitioner: Practitioner | null = null;
         if (data.practitionerDid) {
             practitioner = await this.practitionerRepo.findOne({ where: { did: data.practitionerDid } });
         }
+
+        // Check Access (Consent)
+        await this.checkAccess(userDid, patient);
+
 
         // 3. Encrypt sensitive data
         const encryptedValue = this.encryptionService.encryptObject(data.value);
@@ -138,49 +143,37 @@ export class RecordsService {
     }
 
     async getAccessLogs(patientDid: string, userDid: string): Promise<AccessLog[]> {
-        // Only the patient can view their own access logs (usually)
-        // Or a provider with specific permission?
-        // Let's assume strict: only patient can see logs for now
-        if (patientDid !== userDid) {
-            // Check if it's a provider?
-            // For now, adhere to strict privacy for patient logs
-            // But actually, getAccessLogs takes a did param
-            // If did == userDid, it's "me"
-        }
-
         const patient = await this.patientRepo.findOne({ where: { did: patientDid } });
         if (!patient) throw new NotFoundException('Patient not found');
-        
-        // Security check
-        if (patient.did !== userDid) {
-             const practitioner = await this.practitionerRepo.findOne({ where: { did: userDid } });
-             if (!practitioner) {
-                 throw new ForbiddenException('Access denied');
-             }
-             // Providers might see logs if they have consent? 
-             // Simplification: Patient sees their logs. Provider sees logs THEY created (via getProviderAccessLogs).
-             // If a provider calls getAccessLogs(patientDid), they might want to see who ELSE accessed it? 
-             // Usually that's restricted.
-             // Let's keep this method for Patient Only for now, or allow Provider if they are the patient (impossible).
-             // Actually, the previous implementation allowed if userDid !== patientDid but checkAccess was not called.
-             // Let's revert to the previous logic:
-             // "DEV OVERRIDE: Allow any registered practitioner to view logs for now" was in the viewed file previously.
-             // I will implement getProviderAccessLogs separately.
-        }
+
+        // Security check - Re-use standard access check (Patient Match OR Consent)
+        await this.checkAccess(userDid, patient);
 
         return this.accessLogRepo.find({
             where: { patient: { id: patient.id } },
-            order: { accessedAt: 'DESC' }, // Fix timestamp -> accessedAt
+            order: { accessedAt: 'DESC' },
             relations: ['patient']
         });
     }
 
     async getProviderAccessLogs(providerDid: string): Promise<AccessLog[]> {
-        return this.accessLogRepo.find({
+        const logs = await this.accessLogRepo.find({
             where: { accessorDid: providerDid },
             order: { accessedAt: 'DESC' },
             relations: ['patient']
         });
+
+        // Ensure patient data is properly formatted
+        return logs.map(log => ({
+            ...log,
+            patient: log.patient ? {
+                id: log.patient.id,
+                did: log.patient.did,
+                name: log.patient.name || [{ text: 'Unknown Patient' }],
+                birthDate: log.patient.birthDate,
+                gender: log.patient.gender,
+            } : null
+        })) as AccessLog[];
     }
 
     private async checkAccess(userDid: string, patient: Patient): Promise<void> {
@@ -197,15 +190,6 @@ export class RecordsService {
         });
 
         if (consent && consent.isActive()) return;
-
-        // DEV OVERRIDE: Allow any registered practitioner to view records
-        // Retrieve practitioner to verify they exist in our system
-        const practitioner = await this.practitionerRepo.findOne({ where: { did: userDid } });
-        if (practitioner) {
-            // In production, we would require explicit consent here.
-            // For development/demo, we allow registered providers access.
-            return;
-        }
 
         throw new ForbiddenException('No active consent found for this record');
     }

@@ -1,6 +1,6 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards, Request, Query, Patch } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { DidService } from './did.service';
 import { DidAuthGuard } from './guards/did-auth.guard';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +13,7 @@ import { Observation } from '../database/entities/observation.entity';
 import { DiagnosticReport } from '../database/entities/diagnostic-report.entity';
 import { MedicationRequest } from '../database/entities/medication-request.entity';
 import { ConsentRecord, ConsentStatus } from '../database/entities/consent-record.entity';
+import { PatientsService } from './patients.service';
 
 @ApiTags('identity')
 @Controller('identity')
@@ -20,6 +21,7 @@ export class IdentityController {
     constructor(
         private didService: DidService,
         private jwtService: JwtService,
+        private patientsService: PatientsService,
         @InjectRepository(Patient)
         private patientRepository: Repository<Patient>,
         @InjectRepository(Practitioner)
@@ -35,16 +37,23 @@ export class IdentityController {
     ) { }
 
     @Get('patient/search')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Search patients by name, DID, or other attributes' })
-    @ApiResponse({ status: 200, description: 'Returns matching patients' })
-    async searchPatients(@Query('query') query: string) {
+    @ApiResponse({ status: 200, description: 'Returns matching patients (Paginated)' })
+    async searchPatients(
+        @Query('query') query: string,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10
+    ) {
         if (!query) {
-            return [];
+            return { data: [], meta: { total: 0, page, limit } };
         }
 
         const normalizedQuery = query.toLowerCase().trim();
+        const skip = (page - 1) * limit;
 
-        const patients = await this.patientRepository
+        const [patients, total] = await this.patientRepository
             .createQueryBuilder('patient')
             // Match DID
             .where('LOWER(patient.did) LIKE :query', { query: `%${normalizedQuery}%` })
@@ -54,23 +63,76 @@ export class IdentityController {
             .orWhere('LOWER(CAST(patient.telecom AS TEXT)) LIKE :query', { query: `%${normalizedQuery}%` })
             // Match Wallet Address
             .orWhere('LOWER(patient.walletAddress) LIKE :query', { query: `%${normalizedQuery}%` })
-            .getMany();
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
 
-        return patients;
+        // Sanitize results: Return only identity info, hide contact details (PII)
+        const sanitized = patients.map(p => ({
+            did: p.did,
+            name: p.name,
+            gender: p.gender,
+            birthDate: p.birthDate,
+            // PII excluded
+        }));
+
+        return {
+            data: sanitized,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 
     @Get('patient/:did')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Get patient details by DID' })
     @ApiResponse({ status: 200, description: 'Patient found' })
-    async getPatient(@Param('did') did: string) {
-        // We might need to handle the case where DID includes slashes or needs decoding, 
-        // but typically standard DIDs are fine in URL params if simple. 
-        // Best practice to encodeCOMPONENT in frontend.
-        const patient = await this.patientRepository.findOne({ where: { did } });
-        if (!patient) {
-            throw new Error('Patient not found');
+    async getPatient(@Param('did') did: string, @Request() req) {
+        // 1. If requesting own profile
+        if (req.user.did === did) {
+            const patient = await this.patientRepository.findOne({ where: { did } });
+            if (!patient) {
+                throw new Error('Patient not found');
+            }
+            return patient;
         }
-        return patient;
+
+        // 2. If provider (or other), check for consent/access permissions
+        // This service method throws Forbidden if no access
+        return this.patientsService.getPatientByDidForProvider(did, req.user.did);
+    }
+
+    @Get('provider/patients')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all patients accessible to the authenticated provider' })
+    @ApiResponse({ status: 200, description: 'Returns patients with active consent' })
+    async getProviderPatients(@Request() req) {
+        return this.patientsService.getProviderPatients(req.user.did);
+    }
+
+    @Get('provider/patient/:did')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get a specific patient by DID (requires active consent)' })
+    @ApiResponse({ status: 200, description: 'Patient found and accessible' })
+    async getPatientByDidForProvider(@Param('did') did: string, @Request() req) {
+        return this.patientsService.getPatientByDidForProvider(did, req.user.did);
+    }
+
+    @Get('provider/patient/:did/access')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Check if provider has access to a specific patient' })
+    @ApiResponse({ status: 200, description: 'Returns access status' })
+    async checkPatientAccess(@Param('did') did: string, @Request() req) {
+        const hasAccess = await this.patientsService.hasProviderAccess(did, req.user.did);
+        return { hasAccess, patientDid: did };
     }
 
     @Post('practitioner/create')
@@ -243,25 +305,62 @@ export class IdentityController {
     }
 
     @Get('practitioner/stats/dashboard')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Get provider dashboard stats' })
     @ApiResponse({ status: 200, description: 'Returns dashboard statistics' })
-    async getDashboardStats() {
-        // In a real app, we would filter by the authenticated provider's ID.
-        // For now, we return global stats or "mocked" real stats for demonstration.
+    async getDashboardStats(@Request() req) {
+        const providerDid = req.user.did;
 
-        const activePatients = await this.patientRepository.count();
+        // Get the provider entity
+        const provider = await this.practitionerRepository.findOne({ where: { did: providerDid } });
+        if (!provider) {
+            throw new Error('Provider not found');
+        }
 
-        const observationsCount = await this.observationRepository.count();
-        const diagnosticsCount = await this.diagnosticReportRepository.count();
-        const medicationsCount = await this.medicationRequestRepository.count();
-        const recordsUploaded = observationsCount + diagnosticsCount + medicationsCount;
+        // Count active patients (those with active consent for this provider)
+        const activePatients = await this.consentRecordRepository.count({
+            where: {
+                practitioner: { id: provider.id },
+                status: ConsentStatus.ACTIVE
+            }
+        });
 
-        const pendingRequests = await this.consentRecordRepository.count({ where: { status: ConsentStatus.PENDING } });
+        // Get all patient IDs with active consent for this provider
+        const activeConsents = await this.consentRecordRepository.find({
+            where: {
+                practitioner: { id: provider.id },
+                status: ConsentStatus.ACTIVE
+            },
+            relations: ['patient']
+        });
 
-        // For Interoperability, we can check if we have any external system connections or just return a static "Active" if everything is running.
-        // Or count external references?
-        // Let's just return a count of something relevant or a fixed number for now as "systems connected".
-        const interoperabilityCount = 1; // e.g. connected to the blockchain
+        const patientIds = activeConsents.map(c => c.patient.id);
+
+        // Count records only for patients this provider has consent for
+        let recordsUploaded = 0;
+        if (patientIds.length > 0) {
+            const observationsCount = await this.observationRepository.count({
+                where: { patient: { id: In(patientIds) } }
+            });
+            const diagnosticsCount = await this.diagnosticReportRepository.count({
+                where: { patient: { id: In(patientIds) } }
+            });
+            const medicationsCount = await this.medicationRequestRepository.count({
+                where: { patient: { id: In(patientIds) } }
+            });
+            recordsUploaded = observationsCount + diagnosticsCount + medicationsCount;
+        }
+
+        // Count pending requests for this provider only
+        const pendingRequests = await this.consentRecordRepository.count({
+            where: {
+                practitioner: { id: provider.id },
+                status: ConsentStatus.PENDING
+            }
+        });
+
+        const interoperabilityCount = activePatients; // Number of active patient connections
 
         return {
             activePatients,
@@ -269,7 +368,7 @@ export class IdentityController {
             pendingRequests,
             interoperabilityCount,
             systemStatus: {
-                blockchain: 'Connected', // Ideally check this.didService.checkHealth()
+                blockchain: 'Connected',
                 fhirApi: 'Active',
                 didService: 'Online'
             }
@@ -298,5 +397,113 @@ export class IdentityController {
     @ApiOperation({ summary: 'Get authenticated user profile' })
     getProfile(@Request() req) {
         return req.user;
+    }
+
+    @Patch('provider/profile')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update provider profile' })
+    @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+    async updateProviderProfile(@Request() req, @Body() body: any) {
+        const provider = await this.practitionerRepository.findOne({ where: { did: req.user.did } });
+        if (!provider) {
+            throw new Error('Provider not found');
+        }
+
+        // Update fields if provided
+        if (body.fullName) {
+            provider.name = [{ text: body.fullName }];
+        }
+        if (body.email) {
+            // Update telecom email
+            const otherTelecoms = provider.telecom?.filter((t: any) => t.system !== 'email') || [];
+            provider.telecom = [...otherTelecoms, { system: 'email', value: body.email }];
+        }
+        if (body.hospitalName || body.hospitalType) {
+            provider.meta = {
+                ...provider.meta,
+                hospitalName: body.hospitalName || provider.meta?.hospitalName,
+                hospitalType: body.hospitalType || provider.meta?.hospitalType
+            };
+        }
+        if (body.specialty) {
+            if (provider.qualification && provider.qualification.length > 0) {
+                provider.qualification[0].display = body.specialty;
+            } else {
+                provider.qualification = [{ display: body.specialty }] as any;
+            }
+        }
+
+        return this.practitionerRepository.save(provider);
+    }
+
+    @Patch('patient/profile')
+    @UseGuards(DidAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update patient profile' })
+    @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+    async updatePatientProfile(@Request() req, @Body() body: any) {
+        const patient = await this.patientRepository.findOne({ where: { did: req.user.did } });
+        if (!patient) {
+            throw new Error('Patient not found');
+        }
+
+        // Update fields if provided
+        if (body.name) {
+            // Handle simple name update or complex FHIR structure
+            if (typeof body.name === 'string') {
+                // Update first name entry text
+                if (!patient.name) patient.name = [];
+                if (patient.name.length > 0) {
+                    patient.name[0].text = body.name;
+                    // If we want to try and parse given/family, we could, but text is safer for simple update
+                } else {
+                    patient.name.push({ text: body.name });
+                }
+            } else if (Array.isArray(body.name)) {
+                patient.name = body.name;
+            }
+            // Specific fields from frontend form: firstName, lastName
+            if (body.firstName || body.lastName) {
+                if (!patient.name) patient.name = [{}];
+                if (!patient.name[0]) patient.name[0] = {};
+
+                const currentName = patient.name[0];
+                if (body.firstName) currentName.given = [body.firstName];
+                if (body.lastName) currentName.family = body.lastName;
+                // Reconstruct text
+                currentName.text = `${currentName.given?.[0] || ''} ${currentName.family || ''}`.trim();
+            }
+        }
+
+        if (body.gender) patient.gender = body.gender;
+        if (body.birthDate) patient.birthDate = new Date(body.birthDate);
+
+        if (body.email || body.phone) {
+            if (!patient.telecom) patient.telecom = [];
+
+            if (body.email) {
+                const existingEmail = patient.telecom.find((t: any) => t.system === 'email');
+                if (existingEmail) existingEmail.value = body.email;
+                else patient.telecom.push({ system: 'email', value: body.email });
+            }
+
+            if (body.phone) {
+                const existingPhone = patient.telecom.find((t: any) => t.system === 'phone');
+                if (existingPhone) existingPhone.value = body.phone;
+                else patient.telecom.push({ system: 'phone', value: body.phone });
+            }
+        }
+
+        if (body.address) {
+            if (typeof body.address === 'string') {
+                // Simple text address
+                if (!patient.address) patient.address = [{}];
+                if (!patient.address[0]) patient.address[0] = {};
+                patient.address[0].text = body.address;
+            }
+        }
+
+        return this.patientRepository.save(patient);
     }
 }

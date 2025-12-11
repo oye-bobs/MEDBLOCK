@@ -10,7 +10,6 @@ import {
     Clock,
     AlertCircle,
     ChevronRight,
-    CheckCircle,
     Search,
     Upload,
     Shield,

@@ -12,6 +12,7 @@ import { Observation } from '../database/entities/observation.entity';
 import { DiagnosticReport } from '../database/entities/diagnostic-report.entity';
 import { MedicationRequest } from '../database/entities/medication-request.entity';
 import { ConsentRecord } from '../database/entities/consent-record.entity';
+import { PatientsService } from './patients.service';
 
 @Module({
     imports: [
@@ -34,7 +35,7 @@ import { ConsentRecord } from '../database/entities/consent-record.entity';
         }),
     ],
     controllers: [IdentityController],
-    providers: [DidService, DidAuthStrategy],
-    exports: [DidService],
+    providers: [DidService, DidAuthStrategy, PatientsService],
+    exports: [DidService, PatientsService],
 })
 export class IdentityModule { }

@@ -60,4 +60,10 @@ export class ConsentController {
     async rejectConsent(@Param('id') id: string, @Request() req) {
         return this.consentService.rejectConsent(id, req.user.did);
     }
+
+    @Get('all')
+    @ApiOperation({ summary: 'Get all consents (active, pending, revoked) for audit purposes' })
+    async getAllConsents(@Request() req) {
+        return this.consentService.getAllConsents(req.user.did);
+    }
 }
