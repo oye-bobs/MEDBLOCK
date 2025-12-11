@@ -6,3 +6,4 @@ export * from './medication-request.entity';
 export * from './encounter.entity';
 export * from './consent-record.entity';
 export * from './access-log.entity';
+export * from './notification.entity';

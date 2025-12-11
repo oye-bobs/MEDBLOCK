@@ -13,7 +13,6 @@ import { Practitioner } from './practitioner.entity';
 
 @Entity('fhir_encounter')
 @Index(['patient', 'periodStart'])
-@Index(['blockchainHash'])
 export class Encounter {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -33,10 +32,10 @@ export class Encounter {
     @Column({ length: 20, default: 'finished' })
     status: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     class: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     type: any;
 
     @Column({ type: 'timestamp', nullable: true })
@@ -45,16 +44,16 @@ export class Encounter {
     @Column({ type: 'timestamp', nullable: true })
     periodEnd: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     reasonCode: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     diagnosis: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     hospitalization: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     location: any;
 
     @CreateDateColumn()
@@ -64,7 +63,6 @@ export class Encounter {
     updatedAt: Date;
 
     @Column({ length: 64, unique: true })
-    @Index()
     blockchainHash: string;
 
     @Column({ length: 255, nullable: true })

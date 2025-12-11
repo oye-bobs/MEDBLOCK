@@ -13,7 +13,6 @@ import { Practitioner } from './practitioner.entity';
 
 @Entity('fhir_diagnostic_report')
 @Index(['patient', 'effectiveDatetime'])
-@Index(['blockchainHash'])
 export class DiagnosticReport {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -35,16 +34,16 @@ export class DiagnosticReport {
     @Column({ length: 20, default: 'final' })
     status: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     category: any;
 
-    @Column('jsonb')
+    @Column('simple-json')
     code: any;
 
     @Column({ type: 'text', nullable: true })
     conclusion: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     conclusionCode: any;
 
     @Column({ type: 'timestamp', nullable: true })
@@ -53,13 +52,13 @@ export class DiagnosticReport {
     @Column({ type: 'timestamp', nullable: true })
     issued: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     result: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     imagingStudy: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     media: any;
 
     @CreateDateColumn()
@@ -69,7 +68,6 @@ export class DiagnosticReport {
     updatedAt: Date;
 
     @Column({ length: 64, unique: true })
-    @Index()
     blockchainHash: string;
 
     @Column({ length: 255, nullable: true })

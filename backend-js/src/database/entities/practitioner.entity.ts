@@ -14,16 +14,14 @@ import { Encounter } from './encounter.entity';
 import { ConsentRecord } from './consent-record.entity';
 
 @Entity('fhir_practitioner')
-@Index(['did'])
 export class Practitioner {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({ unique: true, length: 255 })
-    @Index()
     did: string;
 
-    @Column('jsonb')
+    @Column('simple-json')
     name: any;
 
     @Column({ length: 20, nullable: true })
@@ -32,14 +30,17 @@ export class Practitioner {
     @Column({ type: 'date', nullable: true })
     birthDate: Date;
 
-    @Column('jsonb', { default: [] })
+    @Column('simple-json', { default: [] })
     qualification: any[];
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     telecom: any;
 
     @Column({ type: 'boolean', default: true })
     active: boolean;
+
+    @Column('simple-json', { nullable: true })
+    meta: any;
 
     @CreateDateColumn()
     createdAt: Date;

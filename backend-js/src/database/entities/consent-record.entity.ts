@@ -39,13 +39,15 @@ export class ConsentRecord {
     practitioner: Practitioner;
 
     @Column({
-        type: 'enum',
-        enum: ConsentStatus,
+        type: 'text',
         default: ConsentStatus.PENDING,
     })
     status: ConsentStatus;
 
-    @Column('jsonb', { default: [] })
+    @Column({ type: 'text', nullable: true })
+    initiatedBy: string;
+
+    @Column('simple-json', { default: [] })
     scope: string[];
 
     @CreateDateColumn()

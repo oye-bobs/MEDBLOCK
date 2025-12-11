@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useEffect, useState } from 'react'
 import Sidebar from './Sidebar'
 import { Menu } from 'lucide-react'
+import NotificationBell from './NotificationBell'
 
 export default function Layout() {
     const { isAuthenticated } = useAuth()
@@ -41,7 +42,7 @@ export default function Layout() {
                         </button>
                         <span className="ml-3 font-bold text-lg text-blue-600">MEDBLOCK</span>
                     </div>
-                    <div className="w-8" /> {/* Spacer for balance */}
+                    <NotificationBell />
                 </div>
 
                 <div className="flex-1 flex flex-col">

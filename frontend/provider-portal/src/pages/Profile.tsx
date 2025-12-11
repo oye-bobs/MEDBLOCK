@@ -1,11 +1,80 @@
-import { useState, useContext } from 'react'
-import { AuthContext } from '../App'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Shield, Key, Bell, Save } from 'lucide-react'
+import { Shield, Key, Bell, Save, Copy, CheckCircle, AlertCircle, QrCode } from 'lucide-react'
+import { apiService } from '../services/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import ProviderQRModal from '../components/ProviderQRModal'
 
 export default function Profile() {
-    const { providerName, providerDID } = useContext(AuthContext)
+    const queryClient = useQueryClient()
     const [activeTab, setActiveTab] = useState('general')
+    const [showQR, setShowQR] = useState(false)
+    const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+    const [formData, setFormData] = useState({
+        fullName: '',
+        email: '',
+        licenseNumber: '',
+        facility: '',
+        specialty: '',
+        hospitalType: ''
+    })
+
+    // Fetch Profile
+    const { data: profile, isLoading } = useQuery({
+        queryKey: ['profile'],
+        queryFn: () => apiService.getProfile(),
+    })
+
+    // Update state when profile is loaded
+    useEffect(() => {
+        if (profile) {
+            setFormData({
+                fullName: profile.name?.[0]?.text || '',
+                email: profile.telecom?.find((t: any) => t.system === 'email')?.value || '',
+                licenseNumber: profile.qualification?.[0]?.code || '',
+                facility: profile.meta?.hospitalName || profile.qualification?.[0]?.issuer || '',
+                specialty: profile.qualification?.[0]?.display || '',
+                hospitalType: profile.meta?.hospitalType || ''
+            })
+        }
+    }, [profile])
+
+    // Mutation for update
+    const updateMutation = useMutation({
+        mutationFn: apiService.updateProviderProfile.bind(apiService),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['profile'] })
+            setNotification({ type: 'success', message: 'Profile updated successfully!' })
+            setTimeout(() => setNotification(null), 3000)
+        },
+        onError: (_error: any) => {
+            setNotification({ type: 'error', message: 'Failed to update profile. Please try again.' })
+        }
+    })
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
+    const handleSave = () => {
+        updateMutation.mutate({
+            fullName: formData.fullName,
+            email: formData.email,
+            hospitalName: formData.facility,
+            specialty: formData.specialty,
+            hospitalType: formData.hospitalType
+        })
+    }
+
+    const copyDid = () => {
+        if (profile?.did) {
+            navigator.clipboard.writeText(profile.did)
+            setNotification({ type: 'success', message: 'DID copied to clipboard!' })
+            setTimeout(() => setNotification(null), 3000)
+        }
+    }
+
+    if (isLoading) return <div className="p-8 text-center text-gray-500">Loading profile...</div>
 
     return (
         <motion.div
@@ -14,9 +83,25 @@ export default function Profile() {
             transition={{ duration: 0.5 }}
             className="max-w-4xl mx-auto space-y-6"
         >
-            <h1 className="text-2xl font-bold text-gray-900">Provider Settings</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-gray-900">Provider Settings</h1>
+                <AnimatePresence>
+                    {notification && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${notification.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                }`}
+                        >
+                            {notification.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                            {notification.message}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
 
-            <div className="h-full w-full bg-gray-600 rounded-md bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-10 border border-gray-300 shadow-sm overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
                 <div className="flex border-b border-gray-200">
                     <button
                         onClick={() => setActiveTab('general')}
@@ -45,38 +130,94 @@ export default function Profile() {
                             >
                                 <div className="flex items-center gap-4 mb-8">
                                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
-                                        {providerName?.charAt(0) || 'D'}
+                                        {formData.fullName?.charAt(0) || 'D'}
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-gray-900">{providerName}</h3>
-                                        <p className="text-gray-500">Cardiology Specialist</p>
-                                        <p className="text-xs font-mono text-gray-400 mt-1">{providerDID}</p>
+                                        <h3 className="text-lg font-bold text-gray-900">{formData.fullName || 'Provider'}</h3>
+                                        <p className="text-gray-500">{formData.specialty || 'Specialist'}</p>
+                                        <div className="flex gap-2">
+                                            <div className="flex items-center gap-2 mt-1 cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors" onClick={copyDid}>
+                                                <p className="text-xs font-mono text-gray-400">
+                                                    {profile?.did ? `${profile.did.substring(0, 20)}...` : 'Loading...'}
+                                                </p>
+                                                <Copy size={12} className="text-gray-400" />
+                                            </div>
+                                            <button
+                                                onClick={() => setShowQR(true)}
+                                                className="mt-1 flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors"
+                                            >
+                                                <QrCode size={12} />
+                                                Show QR
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                        <input type="text" defaultValue={providerName} className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                        <input
+                                            name="fullName"
+                                            type="text"
+                                            value={formData.fullName}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                        <input type="email" defaultValue="dr.adebayo@luth.edu.ng" className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                        <input
+                                            name="email"
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Medical License ID</label>
-                                        <input type="text" defaultValue="MDCN/2010/45892" disabled className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed" />
+                                        <input
+                                            type="text"
+                                            value={formData.licenseNumber}
+                                            disabled
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">License ID cannot be changed</p>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Facility</label>
-                                        <input type="text" defaultValue="Lagos University Teaching Hospital" className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Facility Name</label>
+                                        <input
+                                            name="facility"
+                                            type="text"
+                                            value={formData.facility}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
+                                        <input
+                                            name="specialty"
+                                            type="text"
+                                            value={formData.specialty}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="pt-4 border-t border-gray-100 flex justify-end">
-                                    <button className="btn btn-primary flex items-center gap-2">
-                                        <Save size={18} />
-                                        Save Changes
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={updateMutation.isPending}
+                                        className="btn btn-primary flex items-center gap-2 disabled:opacity-70"
+                                    >
+                                        {updateMutation.isPending ? (
+                                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                        ) : (
+                                            <Save size={18} />
+                                        )}
+                                        {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>
                             </motion.div>
@@ -133,6 +274,9 @@ export default function Profile() {
                     </AnimatePresence>
                 </div>
             </div>
+
+            {/* QR Code Modal */}
+            <ProviderQRModal isOpen={showQR} onClose={() => setShowQR(false)} />
         </motion.div>
     )
 }

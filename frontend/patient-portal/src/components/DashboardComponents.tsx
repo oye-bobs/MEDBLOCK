@@ -111,7 +111,14 @@ export const RecordItem: React.FC<RecordItemProps> = ({ record, delay = 0 }) => 
                     <p className="font-medium text-gray-900">{record.code?.text || 'Medical Record'}</p>
                     <p className="text-xs text-gray-500 flex items-center mt-1">
                         <Calendar size={12} className="mr-1" />
-                        {format(new Date(record.effective_datetime), 'MMM d, yyyy')} • {record.performer?.[0]?.display || 'Unknown Provider'}
+                        {(() => {
+                            const dateVal = record.effectiveDatetime || record.effective_datetime || record.issued || new Date();
+                            try {
+                                return format(new Date(dateVal), 'MMM d, yyyy');
+                            } catch (e) {
+                                return 'Unknown Date';
+                            }
+                        })()} • {record.performer?.[0]?.display || record.practitioner?.name || 'Unknown Provider'}
                     </p>
                 </div>
             </div>
@@ -168,11 +175,18 @@ export const ConsentItem: React.FC<ConsentItemProps> = ({ consent, onRevoke, del
                 </div>
                 <div>
                     <p className="text-sm font-medium text-gray-900">
-                        {consent.provider_did ? `${consent.provider_did.substring(0, 15)}...` : 'Unknown Provider'}
+                        {consent.provider?.name?.[0]?.text || (consent.provider_did ? `${consent.provider_did.substring(0, 15)}...` : 'Unknown Provider')}
                     </p>
                     <p className="text-xs text-gray-500 flex items-center mt-1">
                         <Clock size={12} className="mr-1" />
-                        Expires: {format(new Date(consent.expires_at), 'MMM d, yyyy')}
+                        Expires: {(() => {
+                            const dateVal = consent.expiresAt || consent.expires_at;
+                            try {
+                                return dateVal ? format(new Date(dateVal), 'MMM d, yyyy') : 'Never';
+                            } catch (e) {
+                                return 'Unknown';
+                            }
+                        })()}
                     </p>
                 </div>
             </div>

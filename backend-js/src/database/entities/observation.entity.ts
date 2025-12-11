@@ -13,7 +13,6 @@ import { Practitioner } from './practitioner.entity';
 
 @Entity('fhir_observation')
 @Index(['patient', 'effectiveDatetime'])
-@Index(['blockchainHash'])
 export class Observation {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -33,13 +32,13 @@ export class Observation {
     @Column({ length: 20, default: 'final' })
     status: string;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     category: any;
 
-    @Column('jsonb')
+    @Column('simple-json')
     code: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     value: any;
 
     @Column({ type: 'timestamp', nullable: true })
@@ -48,7 +47,7 @@ export class Observation {
     @Column({ type: 'timestamp', nullable: true })
     issued: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     interpretation: any;
 
     @Column({ type: 'text', nullable: true })
@@ -67,7 +66,6 @@ export class Observation {
     updatedAt: Date;
 
     @Column({ length: 64, unique: true })
-    @Index()
     blockchainHash: string;
 
     @Column({ length: 255, nullable: true })

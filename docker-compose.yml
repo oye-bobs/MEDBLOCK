@@ -14,16 +14,12 @@ services:
       - cardano-node-ipc:/opt/cardano/ipc
       - ./infrastructure/cardano-node/config:/opt/cardano/config:ro
     command: >
-      run
-      --topology /opt/cardano/config/topology.json
-      --database-path /opt/cardano/data
-      --socket-path /opt/cardano/ipc/node.socket
-      --config /opt/cardano/config/config.json
+      run --topology /opt/cardano/config/topology.json --database-path /opt/cardano/data --socket-path /opt/cardano/ipc/node.socket --config /opt/cardano/config/config.json
     ports:
-      - "3001:3001"  # Node-to-node communication
+      - "3001:3001" # Node-to-node communication
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "cardano-cli query tip --testnet-magic 1 --socket-path /opt/cardano/ipc/node.socket"]
+      test: [ "CMD-SHELL", "cardano-cli query tip --testnet-magic 1 --socket-path /opt/cardano/ipc/node.socket" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -38,8 +34,8 @@ services:
     container_name: medblock-postgres
     environment:
       - POSTGRES_DB=${DB_NAME:-medblock_db}
-      - POSTGRES_USER=${DB_USER:-medblock_user}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-abasthomas}
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -48,7 +44,7 @@ services:
       - "5432:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-medblock_user}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-medblock_user}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -68,7 +64,7 @@ services:
       - "6379:6379"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -78,27 +74,34 @@ services:
   # ============================================
   # Backend API (Django/FastAPI)
   # ============================================
+  # ============================================
+  # Backend API (NestJS)
+  # ============================================
   backend:
     build:
-      context: ./backend
+      context: ./backend-js
       dockerfile: ../infrastructure/docker/backend/Dockerfile
     container_name: medblock-backend
     environment:
-      - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
-      - CARDANO_NODE_SOCKET_PATH=/opt/cardano/ipc/node.socket
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-medblock_db}
-      - DB_USER=${DB_USER:-medblock_user}
-      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - PORT=8000
+      - DATABASE_TYPE=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DB_NAME:-medblock_db}
+      - DATABASE_USER=${DB_USER:-postgres}
+      - DATABASE_PASSWORD=${DB_PASSWORD:-abasthomas}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
+      - CARDANO_NODE_SOCKET_PATH=/opt/cardano/ipc/node.socket
       - PRISM_API_KEY=${PRISM_API_KEY}
       - PRISM_NODE_URL=${PRISM_NODE_URL}
+      - JWT_SECRET=${JWT_SECRET_KEY:-supersecretkey}
+    env_file:
+      - ./backend-js/.env
     volumes:
-      - ./backend:/app
+      - ./backend-js:/app
+      - /app/node_modules
       - cardano-node-ipc:/opt/cardano/ipc:ro
       - backend-logs:/var/log/medblock
     ports:
@@ -111,12 +114,7 @@ services:
       cardano-node:
         condition: service_healthy
     restart: unless-stopped
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        python manage.py collectstatic --noinput &&
-        gunicorn medblock.wsgi:application --bind 0.0.0.0:8000 --workers 4
-      "
+    command: npm run start:dev
     networks:
       - medblock-network
 
@@ -157,7 +155,6 @@ services:
     restart: unless-stopped
     networks:
       - medblock-network
-
   # ============================================
   # Nginx Reverse Proxy (Optional - Production)
   # ============================================
@@ -178,9 +175,9 @@ services:
   #   networks:
   #     - medblock-network
 
-# ============================================
-# Persistent Volumes
-# ============================================
+  # ============================================
+  # Persistent Volumes
+  # ============================================
 volumes:
   cardano-node-data:
     driver: local

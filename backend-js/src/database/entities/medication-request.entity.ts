@@ -13,7 +13,6 @@ import { Practitioner } from './practitioner.entity';
 
 @Entity('fhir_medication_request')
 @Index(['patient', 'authoredOn'])
-@Index(['blockchainHash'])
 export class MedicationRequest {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -38,19 +37,19 @@ export class MedicationRequest {
     @Column({ length: 20, default: 'order' })
     intent: string;
 
-    @Column('jsonb')
+    @Column('simple-json')
     medicationCodeableConcept: any;
 
     @Column({ type: 'timestamp', nullable: true })
     authoredOn: Date;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     dosageInstruction: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     dispenseRequest: any;
 
-    @Column('jsonb', { nullable: true })
+    @Column('simple-json', { nullable: true })
     substitution: any;
 
     @Column({ type: 'text', nullable: true })
@@ -66,7 +65,6 @@ export class MedicationRequest {
     updatedAt: Date;
 
     @Column({ length: 64, unique: true })
-    @Index()
     blockchainHash: string;
 
     @Column({ length: 255, nullable: true })

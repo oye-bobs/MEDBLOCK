@@ -19,6 +19,9 @@ async function bootstrap() {
     transform: true,
   }));
 
+  // Global API Prefix
+  app.setGlobalPrefix('api');
+
   // Swagger Documentation
   const config = new DocumentBuilder()
     .setTitle('MEDBLOCK API')

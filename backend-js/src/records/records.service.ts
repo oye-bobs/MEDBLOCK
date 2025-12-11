@@ -39,11 +39,16 @@ export class RecordsService {
         const patient = await this.patientRepo.findOne({ where: { did: data.patientDid } });
         if (!patient) throw new NotFoundException('Patient not found');
 
+
         // 2. Validate Practitioner (if applicable)
         let practitioner: Practitioner | null = null;
         if (data.practitionerDid) {
             practitioner = await this.practitionerRepo.findOne({ where: { did: data.practitionerDid } });
         }
+
+        // Check Access (Consent)
+        await this.checkAccess(userDid, patient);
+
 
         // 3. Encrypt sensitive data
         const encryptedValue = this.encryptionService.encryptObject(data.value);
@@ -137,6 +142,40 @@ export class RecordsService {
         });
     }
 
+    async getAccessLogs(patientDid: string, userDid: string): Promise<AccessLog[]> {
+        const patient = await this.patientRepo.findOne({ where: { did: patientDid } });
+        if (!patient) throw new NotFoundException('Patient not found');
+
+        // Security check - Re-use standard access check (Patient Match OR Consent)
+        await this.checkAccess(userDid, patient);
+
+        return this.accessLogRepo.find({
+            where: { patient: { id: patient.id } },
+            order: { accessedAt: 'DESC' },
+            relations: ['patient']
+        });
+    }
+
+    async getProviderAccessLogs(providerDid: string): Promise<AccessLog[]> {
+        const logs = await this.accessLogRepo.find({
+            where: { accessorDid: providerDid },
+            order: { accessedAt: 'DESC' },
+            relations: ['patient']
+        });
+
+        // Ensure patient data is properly formatted
+        return logs.map(log => ({
+            ...log,
+            patient: log.patient ? {
+                id: log.patient.id,
+                did: log.patient.did,
+                name: log.patient.name || [{ text: 'Unknown Patient' }],
+                birthDate: log.patient.birthDate,
+                gender: log.patient.gender,
+            } : null
+        })) as AccessLog[];
+    }
+
     private async checkAccess(userDid: string, patient: Patient): Promise<void> {
         // 1. If user is the patient, allow
         if (userDid === patient.did) return;
@@ -150,9 +189,9 @@ export class RecordsService {
             },
         });
 
-        if (!consent || !consent.isActive()) {
-            throw new ForbiddenException('No active consent found for this record');
-        }
+        if (consent && consent.isActive()) return;
+
+        throw new ForbiddenException('No active consent found for this record');
     }
 
     private async logAccess(
