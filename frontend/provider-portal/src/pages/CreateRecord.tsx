@@ -78,14 +78,37 @@ export default function CreateRecord() {
     const handleSubmit = async () => {
         setIsSubmitting(true)
         try {
+            // Process File to Data URL if exists
+            let attachmentData = null;
+            if (file) {
+                 const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = error => reject(error);
+                });
+                
+                try {
+                    const base64Url = await toBase64(file);
+                    attachmentData = {
+                        url: base64Url,
+                        type: file.type,
+                        title: file.name,
+                        size: file.size
+                    };
+                } catch (err) {
+                    console.error("Error converting file:", err);
+                }
+            }
+
             // Construct FHIR-like Observation Data
             const observationData = {
                 patientDid: patientId,
                 category: [{
                     coding: [{
                         system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-                        code: 'exam',
-                        display: 'Exam'
+                        code: formData.type.toLowerCase(),
+                        display: formData.type // Use the selected type (e.g. Observation, DiagnosticReport)
                     }]
                 }],
                 code: {
@@ -99,23 +122,35 @@ export default function CreateRecord() {
                 value: {
                     valueString: formData.details
                 },
-                note: formData.notes + (file ? ` [Attached File: ${file.name}]` : ''),
+                note: formData.notes,
                 effectiveDatetime: new Date().toISOString(),
-                status: 'final'
+                status: 'final',
+                attachment: attachmentData
             }
-
-            // Note: In a real app, we would upload the file here to IPFS or Cloudinary
-            // and attach the hash/url to the observationData.
-            // For this UI demo, we are just mocking the upload success status.
 
             await apiService.createObservation(observationData)
             setStep(4)
         } catch (error: any) {
             console.error('Failed to create record:', error)
-            if (error.response?.status === 403) {
-                alert("You do not have consent to create records for this patient. Please request access first.")
+            
+            if (error.response) {
+                switch (error.response.status) {
+                    case 413:
+                        alert("File is too large. The request payload exceeded the server limit. Please try a smaller file.")
+                        break
+                    case 403:
+                        alert("Access Denied: You do not have consent to create records for this patient.")
+                        break
+                    case 400:
+                        alert(`Invalid Data: ${error.response.data?.message || 'Please check your input.'}`)
+                        break
+                    default:
+                        alert(`Error: ${error.response.data?.message || 'Failed to create record. Please try again.'}`)
+                }
+            } else if (error.request) {
+                alert("Network Error: No response received from server.")
             } else {
-                alert("Failed to create record. Please try again.")
+                alert(`Error: ${error.message}`)
             }
         } finally {
             setIsSubmitting(false)

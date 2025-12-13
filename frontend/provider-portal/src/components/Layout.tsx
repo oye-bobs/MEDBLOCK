@@ -26,6 +26,7 @@ export default function Layout() {
                 onToggle={() => setIsCollapsed(!isCollapsed)}
                 isMobileOpen={isMobileOpen}
                 onMobileClose={() => setIsMobileOpen(false)}
+                className="print:hidden"
             />
 
             {/* Main Content Area */}
@@ -34,7 +35,7 @@ export default function Layout() {
                     } ml-0 w-full`}
             >
                 {/* Mobile Header */}
-                <div className="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-30">
+                <div className="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-30 print:hidden">
                     <div className="flex items-center">
                         <button
                             onClick={() => setIsMobileOpen(true)}
@@ -56,7 +57,7 @@ export default function Layout() {
                     </main>
 
                     {/* Footer */}
-                    <footer className="bg-white border-t border-gray-200 py-6">
+                    <footer className="bg-white border-t border-gray-200 py-6 print:hidden">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <p className="text-center text-sm text-gray-500">
                                 © 2025 MEDBLOCK. Powered by Cardano blockchain.

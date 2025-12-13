@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "medblock-app"
+  },
+  "targets": {
+    "medblock-app": {
+      "hosting": {
+        "patient": [
+          "medblock-app"
+        ],
+        "provider": [
+          "medblock-app-provider"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

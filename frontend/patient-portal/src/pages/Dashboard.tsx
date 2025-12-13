@@ -10,10 +10,6 @@ import {
     FileText,
     Shield,
     Clock,
-    User,
-    Bell,
-    
-    Heart,
     Activity,
     Zap,
     CheckCircle,
@@ -21,9 +17,6 @@ import {
     ChevronRight,
     Plus,
     RefreshCw,
-    Eye,
-    Calendar,
-    TrendingUp,
     Users,
     Download,
     Share2
@@ -36,7 +29,7 @@ import {
 import BackgroundLayer from '../components/BackgroundLayer'
 
 export default function Dashboard() {
-    const { did, profile, logout } = useAuth()
+    const { did, profile } = useAuth()
     const navigate = useNavigate()
     const queryClient = useQueryClient()
 
@@ -264,7 +257,7 @@ export default function Dashboard() {
                 staggerChildren: 0.1
             }
         }
-    }
+    } as const
 
     const itemVariants = {
         hidden: { y: 20, opacity: 0 },
@@ -273,10 +266,10 @@ export default function Dashboard() {
             opacity: 1,
             transition: {
                 type: "spring",
-                stiffness: 100
+                stiffness: 120
             }
         }
-    }
+    } as const
 
     return (
         <motion.div

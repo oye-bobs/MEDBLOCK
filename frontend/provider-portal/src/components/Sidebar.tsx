@@ -22,9 +22,10 @@ interface SidebarProps {
     onToggle: () => void
     isMobileOpen?: boolean
     onMobileClose?: () => void
+    className?: string
 }
 
-export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, onMobileClose }: SidebarProps) {
+export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, onMobileClose, className = '' }: SidebarProps) {
     const { pathname } = useLocation()
     const { logout, providerName, providerDID } = useContext(AuthContext)
     const navigate = useNavigate()
@@ -154,7 +155,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, o
                 initial={{ width: 256 }}
                 animate={{ width: isCollapsed ? 80 : 256 }}
                 transition={{ duration: 0.3 }}
-                className="hidden md:flex h-screen bg-white border-r border-gray-200 fixed left-0 top-0 z-50 flex-col shadow-lg"
+                className={`hidden md:flex h-screen bg-white border-r border-gray-200 fixed left-0 top-0 z-50 flex-col shadow-lg ${className}`}
             >
                 {sidebarContent}
             </motion.div>

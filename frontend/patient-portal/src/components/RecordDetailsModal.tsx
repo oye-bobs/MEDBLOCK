@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Calendar, Activity, Shield, CheckCircle, FileText, AlertCircle, User, Clock } from 'lucide-react'
+import { X, Activity, Shield, CheckCircle, FileText, User, Clock, Download, File, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface RecordDetailsModalProps {
@@ -20,12 +20,23 @@ export default function RecordDetailsModal({ record, onClose }: RecordDetailsMod
         }
     }
 
+    // Helper to safely extract provider name
+    const getProviderName = (practitioner: any) => {
+        if (!practitioner) return 'Unknown Provider'
+        if (Array.isArray(practitioner.name)) {
+            return practitioner.name[0]?.text || 'Unknown Provider'
+        }
+        if (typeof practitioner.name === 'string') return practitioner.name
+        if (typeof practitioner.name === 'object' && practitioner.name?.text) return practitioner.name.text
+        return 'Unknown Provider'
+    }
+
     // Animation variants
     const overlayVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
         exit: { opacity: 0 }
-    }
+    } as const
 
     const modalVariants = {
         hidden: { opacity: 0, scale: 0.95, y: 20 },
@@ -41,7 +52,7 @@ export default function RecordDetailsModal({ record, onClose }: RecordDetailsMod
             y: 20,
             transition: { duration: 0.2 }
         }
-    }
+    } as const
 
     return (
         <AnimatePresence>
@@ -63,7 +74,7 @@ export default function RecordDetailsModal({ record, onClose }: RecordDetailsMod
                     animate="visible"
                     exit="exit"
                     className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col relative z-10 shadow-2xl"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: any) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
@@ -146,6 +157,52 @@ export default function RecordDetailsModal({ record, onClose }: RecordDetailsMod
                             </div>
                         )}
 
+
+
+                        {/* Attachments Section */}
+                        {record.attachment && record.attachment.url && (
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <File size={16} className="text-purple-600" />
+                                    Attached Document
+                                </h3>
+                                <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 flex items-center justify-between group hover:border-purple-300 transition-colors">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="bg-white p-2 rounded-lg border border-purple-100 shrink-0">
+                                            <FileText size={20} className="text-purple-600" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-gray-900 truncate">{record.attachment.title || 'Medical Document'}</p>
+                                            <p className="text-xs text-gray-500 uppercase">{record.attachment.type?.split('/')?.[1] || 'FILE'} • {record.attachment.size ? `${(record.attachment.size / 1024).toFixed(1)} KB` : 'Unknown Size'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <a 
+                                            href={record.attachment.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg text-gray-600 hover:bg-gray-100 transition-all shadow-sm border border-gray-200"
+                                            title="View File"
+                                        >
+                                            <Eye size={18} />
+                                            <span className="text-sm font-medium hidden sm:inline">View</span>
+                                        </a>
+                                        <a 
+                                            href={record.attachment.url} 
+                                            download={record.attachment.title || "medical-record-attachment"}
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg text-purple-600 hover:bg-purple-600 hover:text-white transition-all shadow-sm border border-purple-100"
+                                            title="Download File"
+                                        >
+                                            <Download size={18} />
+                                            <span className="text-sm font-medium hidden sm:inline">Download</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Blockchain Verification Section */}
                         <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-6 border border-gray-200 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -181,13 +238,15 @@ export default function RecordDetailsModal({ record, onClose }: RecordDetailsMod
 
                         {/* Provider Info (if available) */}
                         <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                <User size={20} className="text-gray-400"/>
-                             </div>
-                             <div>
-                                 <p className="text-xs text-gray-500">Recorded by</p>
-                                 <p className="text-sm font-semibold text-gray-900">Dr. Sarah Thompson</p>
-                             </div>
+                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                <User size={20} className="text-gray-400" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">Recorded by</p>
+                                <p className="text-sm font-semibold text-gray-900">
+                                    {getProviderName(record.practitioner)}
+                                </p>
+                            </div>
                         </div>
 
                     </div>

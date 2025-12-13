@@ -83,3 +83,41 @@
     color: #9ca3af;
   }
 }
+
+/* Print Styles */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only print-specific content */
+  .print\:flex,
+  .print\:flex *,
+  .print\:block,
+  .print\:block * {
+    visibility: visible;
+  }
+
+  /* Remove backgrounds and shadows for print */
+  body {
+    background: white !important;
+  }
+
+  /* Ensure print content takes full page */
+  .print\:flex {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Hide navigation, sidebars, and other UI elements */
+  nav,
+  aside,
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+}

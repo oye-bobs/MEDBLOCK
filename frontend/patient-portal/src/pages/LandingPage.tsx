@@ -456,7 +456,7 @@ const LandingPage: React.FC = () => {
                         <div className="mt-8 pt-8 border-t border-blue-800/50">
                             <p className="text-blue-200 mb-4">Are you a Healthcare Provider?</p>
                             <a
-                                href="http://localhost:3001/signup"
+                                href={`${(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3001' : 'https://medblock-app-provider.web.app'}/signup`}
                                 className="inline-flex items-center gap-2 text-white font-semibold hover:text-blue-200 transition-colors"
                             >
                                 Join as a Provider <ArrowRight size={16} />

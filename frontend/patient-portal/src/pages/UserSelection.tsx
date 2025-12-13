@@ -10,7 +10,9 @@ const UserSelection: React.FC = () => {
 
     const patientLink = isLogin ? '/login' : '/register';
     // Provider portal links - assuming port 3001
-    const providerLink = isLogin ? 'http://localhost:3001/login' : 'http://localhost:3001/signup';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const PROVIDER_BASE_URL = isLocal ? 'http://localhost:3001' : 'https://medblock-app-provider.web.app';
+    const providerLink = isLogin ? `${PROVIDER_BASE_URL}/login` : `${PROVIDER_BASE_URL}/signup`;
 
     const actionText = isLogin ? 'Sign in' : 'Join';
     const patientActionText = isLogin ? 'Enter Patient Portal' : 'Create Patient Account';

@@ -9,9 +9,7 @@ import {
     AlertCircle,
     CheckCircle,
     Clock,
-    User, // Keep User import
-    Heart, // Keep Heart import
-    Activity, // Keep Activity import
+
     ChevronRight,
     Eye,
     Calendar
@@ -46,6 +44,17 @@ interface AuditItemProps {
 interface NotificationItemProps {
     notification: any
     delay?: number
+}
+
+// Helper to safely extract provider name
+const getProviderName = (practitioner: any) => {
+    if (!practitioner) return null
+    if (Array.isArray(practitioner.name)) {
+        return practitioner.name[0]?.text
+    }
+    if (typeof practitioner.name === 'string') return practitioner.name
+    if (typeof practitioner.name === 'object' && practitioner.name?.text) return practitioner.name.text
+    return null
 }
 
 // Components
@@ -118,7 +127,7 @@ export const RecordItem: React.FC<RecordItemProps> = ({ record, delay = 0 }) => 
                             } catch (e) {
                                 return 'Unknown Date';
                             }
-                        })()} • {record.performer?.[0]?.display || record.practitioner?.name || 'Unknown Provider'}
+                        })()} • {record.performer?.[0]?.display || getProviderName(record.practitioner) || 'Unknown Provider'}
                     </p>
                 </div>
             </div>
@@ -175,7 +184,7 @@ export const ConsentItem: React.FC<ConsentItemProps> = ({ consent, onRevoke, del
                 </div>
                 <div>
                     <p className="text-sm font-medium text-gray-900">
-                        {consent.provider?.name?.[0]?.text || (consent.provider_did ? `${consent.provider_did.substring(0, 15)}...` : 'Unknown Provider')}
+                        {getProviderName(consent.provider) || (consent.provider_did ? `${consent.provider_did.substring(0, 15)}...` : 'Unknown Provider')}
                     </p>
                     <p className="text-xs text-gray-500 flex items-center mt-1">
                         <Clock size={12} className="mr-1" />

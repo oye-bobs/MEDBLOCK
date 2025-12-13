@@ -40,9 +40,14 @@ export class RecordsService {
         if (!patient) throw new NotFoundException('Patient not found');
 
 
-        // 2. Validate Practitioner (if applicable)
+        // 2. Validate Practitioner (Identify the provider creating the record)
         let practitioner: Practitioner | null = null;
-        if (data.practitionerDid) {
+        
+        // First check if the authenticated user is a practitioner
+        practitioner = await this.practitionerRepo.findOne({ where: { did: userDid } });
+
+        // Fallback: Check body (only if user lookup failed, though typically user should be the practitioner)
+        if (!practitioner && data.practitionerDid) {
             practitioner = await this.practitionerRepo.findOne({ where: { did: data.practitionerDid } });
         }
 
@@ -88,6 +93,7 @@ export class RecordsService {
             effectiveDatetime: data.effectiveDatetime,
             issued: new Date(),
             note: encryptedNote,
+            attachment: data.attachment,
             blockchainHash: recordHash,
             blockchainTxId: txHash,
         });

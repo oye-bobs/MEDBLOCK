@@ -17,7 +17,7 @@ export default function Records() {
         queryKey: ['observations', did],
         queryFn: () => apiService.getObservations(did!),
         enabled: !!did,
-        refetchInterval: 10000, // Reduced polling frequency
+        refetchInterval: 3000, // Polling for real-time updates
     })
 
     const handleViewDetails = async (recordId: string) => {
@@ -42,7 +42,7 @@ export default function Records() {
                 staggerChildren: 0.1
             }
         }
-    }
+    } as const
 
     const itemVariants = {
         hidden: { y: 20, opacity: 0 },
@@ -54,7 +54,7 @@ export default function Records() {
                 stiffness: 100
             }
         }
-    }
+    } as const
 
     return (
         <motion.div

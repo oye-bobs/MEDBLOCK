@@ -1,4 +1,9 @@
 {
+  "private": true,
+  "workspaces": [
+    "frontend/*",
+    "backend-js"
+  ],
   "dependencies": {
     "sweetalert2": "^11.26.3"
   }

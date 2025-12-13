@@ -23,7 +23,7 @@ export default function Consent() {
         refetchInterval: 5000,
     })
 
-    const { data: profile } = useQuery({
+    useQuery({
         queryKey: ['profile'],
         queryFn: () => apiService.getProfile(),
         staleTime: Infinity
@@ -86,7 +86,7 @@ export default function Consent() {
                 staggerChildren: 0.1
             }
         }
-    }
+    } as const
 
     const itemVariants = {
         hidden: { y: 20, opacity: 0 },
@@ -98,7 +98,7 @@ export default function Consent() {
                 stiffness: 100
             }
         }
-    }
+    } as const
 
     // QR Scanner Logic
     useEffect(() => {
@@ -137,7 +137,7 @@ export default function Consent() {
                         }
                     }
                 },
-                (errorMessage: string) => {
+                (_errorMessage: string) => {
                     // Ignore scan errors
                 }
             );
@@ -325,7 +325,7 @@ export default function Consent() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="bg-white rounded-2xl max-w-md w-full p-6 relative z-10 shadow-xl"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e: any) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <div>
@@ -433,7 +433,7 @@ export default function Consent() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="bg-white rounded-2xl max-w-md w-full p-6 relative z-10 shadow-xl flex flex-col items-center"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e: any) => e.stopPropagation()}
                         >
                             <button
                                 onClick={() => setShowScanner(false)}

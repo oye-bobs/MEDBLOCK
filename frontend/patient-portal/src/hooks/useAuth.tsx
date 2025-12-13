@@ -34,8 +34,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const p = await apiService.getProfile()
           if (mounted) setProfile(p)
-        } catch (e) {
-          console.warn('Failed to load profile', e)
+        } catch (e: any) {
+          if (e.response && e.response.status === 401) {
+            console.warn('Session expired, logging out')
+            logout()
+          } else {
+            console.warn('Failed to load profile', e)
+          }
         }
       }
     }

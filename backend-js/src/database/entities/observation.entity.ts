@@ -41,6 +41,14 @@ export class Observation {
     @Column('simple-json', { nullable: true })
     value: any;
 
+    @Column('simple-json', { nullable: true })
+    attachment: {
+        url: string;
+        type: string;
+        title?: string;
+        size?: number;
+    };
+
     @Column({ type: 'timestamp', nullable: true })
     effectiveDatetime: Date;
 

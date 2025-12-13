@@ -1,40 +1,82 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS
+  // Increase body size limits (for files / payloads)
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+
+  // --------------------------------------------------
+  // CORS CONFIGURATION (FIXED)
+  // --------------------------------------------------
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: [
+      'https://medblock-app-provider.web.app',
+      'https://medblock-app-patient.web.app',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://localhost:5174',
+    ],
+    methods: [
+      'GET',
+      'HEAD',
+      'PUT',
+      'PATCH',
+      'POST',
+      'DELETE',
+      'OPTIONS',
+    ],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+    ],
     credentials: true,
   });
 
-  // Global Validation Pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  // --------------------------------------------------
+  // GLOBAL VALIDATION
+  // --------------------------------------------------
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
-  // Global API Prefix
+  // --------------------------------------------------
+  // GLOBAL API PREFIX
+  // --------------------------------------------------
   app.setGlobalPrefix('api');
 
-  // Swagger Documentation
+  // --------------------------------------------------
+  // SWAGGER
+  // --------------------------------------------------
   const config = new DocumentBuilder()
     .setTitle('MEDBLOCK API')
-    .setDescription('Nigeria\'s Blockchain-Secured National EMR Infrastructure')
+    .setDescription(
+      "Nigeria's Blockchain-Secured National EMR Infrastructure",
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // --------------------------------------------------
+  // SERVER
+  // --------------------------------------------------
   const port = process.env.PORT || 8000;
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger documentation: http://localhost:${port}/api/docs`);
+
+  console.log(`🚀 MEDBLOCK API running on port ${port}`);
+  console.log(`📘 Swagger → /api/docs`);
 }
+
 bootstrap();

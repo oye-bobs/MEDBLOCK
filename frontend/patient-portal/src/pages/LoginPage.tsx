@@ -19,7 +19,7 @@ const Loader = () => (
 )
 
 export default function LoginPage() {
-  const { connect, disconnect, walletName, signMessage, wallets, connected, walletState } = useCardanoWallet()
+  const { connect, disconnect, signMessage, wallets, connected, walletState } = useCardanoWallet()
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -108,10 +108,7 @@ export default function LoginPage() {
     }
   }
 
-  const handleDisconnect = async () => {
-    await disconnect()
-    setStep('connect')
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 relative overflow-hidden bg-gray-50">

@@ -77,7 +77,7 @@ export default function AccessLog() {
                 staggerChildren: 0.1
             }
         }
-    }
+    } as const
 
     const itemVariants = {
         hidden: { y: 20, opacity: 0 },
@@ -89,7 +89,7 @@ export default function AccessLog() {
                 stiffness: 100
             }
         }
-    }
+    } as const
 
     return (
         <motion.div
@@ -293,7 +293,7 @@ export default function AccessLog() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e: any) => e.stopPropagation()}
                             className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                         >
                             {/* Header */}

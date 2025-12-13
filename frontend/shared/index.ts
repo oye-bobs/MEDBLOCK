@@ -1,8 +1,8 @@
 export const APP_NAME = 'MEDBLOCK';
 
 export const PORTAL_URLS = {
-    PATIENT: 'http://localhost:3000',
-    PROVIDER: 'http://localhost:3001',
+    PATIENT: (import.meta as any).env?.VITE_PATIENT_PORTAL_URL || 'http://localhost:3000',
+    PROVIDER: (import.meta as any).env?.VITE_PROVIDER_PORTAL_URL || 'http://localhost:3001',
 };
 
 export const THEME = {

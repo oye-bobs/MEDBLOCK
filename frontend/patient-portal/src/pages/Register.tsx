@@ -4,17 +4,12 @@ import { useCardanoWallet } from '../hooks/useCardanoWallet'
 import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
 import Swal from 'sweetalert2'
-import { PORTAL_URLS } from '@medblock/shared'
 import { motion } from 'framer-motion'
 import {
     Wallet,
-    User,
     Shield,
     Check,
     Loader2,
-    ArrowRight,
-    Smartphone,
-    Laptop,
     AlertTriangle
 } from 'lucide-react'
 

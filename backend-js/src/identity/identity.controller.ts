@@ -411,22 +411,35 @@ export class IdentityController {
         }
 
         // Update fields if provided
-        if (body.fullName) {
+        // Update fields if provided (check for undefined to allow clearing values)
+        if (body.fullName !== undefined) {
             provider.name = [{ text: body.fullName }];
         }
-        if (body.email) {
+        if (body.email !== undefined) {
             // Update telecom email
             const otherTelecoms = provider.telecom?.filter((t: any) => t.system !== 'email') || [];
-            provider.telecom = [...otherTelecoms, { system: 'email', value: body.email }];
+            if (body.email) {
+                provider.telecom = [...otherTelecoms, { system: 'email', value: body.email }];
+            } else {
+                provider.telecom = otherTelecoms;
+            }
         }
-        if (body.hospitalName || body.hospitalType) {
+        
+        if (body.hospitalName !== undefined || body.hospitalType !== undefined) {
             provider.meta = {
                 ...provider.meta,
-                hospitalName: body.hospitalName || provider.meta?.hospitalName,
-                hospitalType: body.hospitalType || provider.meta?.hospitalType
             };
+            
+            if (body.hospitalName !== undefined) {
+                provider.meta.hospitalName = body.hospitalName;
+            }
+            
+            if (body.hospitalType !== undefined) {
+                provider.meta.hospitalType = body.hospitalType;
+            }
         }
-        if (body.specialty) {
+
+        if (body.specialty !== undefined) {
             if (provider.qualification && provider.qualification.length > 0) {
                 provider.qualification[0].display = body.specialty;
             } else {
