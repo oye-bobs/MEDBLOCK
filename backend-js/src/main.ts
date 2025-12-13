@@ -12,31 +12,41 @@ async function bootstrap() {
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // --------------------------------------------------
-  // CORS CONFIGURATION (FIXED)
-  // --------------------------------------------------
+  console.log('Allowed Origins:', [
+    'https://medblock-app-provider.web.app',
+    'https://medblock-app-patient.web.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ]);
+
+  const allowedOrigins = [
+    'https://medblock-app-provider.web.app',
+    'https://medblock-app-patient.web.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ];
+
+  if (process.env.CORS_ORIGIN) {
+    const envOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(o => o.length > 0);
+    allowedOrigins.push(...envOrigins);
+  }
+
   app.enableCors({
-    origin: [
-      'https://medblock-app-provider.web.app',
-      'https://medblock-app-patient.web.app',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:5173',
-      'http://localhost:5174',
-    ],
-    methods: [
-      'GET',
-      'HEAD',
-      'PUT',
-      'PATCH',
-      'POST',
-      'DELETE',
-      'OPTIONS',
-    ],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-    ],
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
+        callback(null, true);
+      } else {
+        console.log(`Blocked CORS for origin: ${requestOrigin}`);
+        callback(null, false);
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    optionsSuccessStatus: 200,
   });
 
   // --------------------------------------------------
