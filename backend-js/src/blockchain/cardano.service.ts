@@ -147,8 +147,19 @@ export class CardanoService implements OnModuleInit {
         try {
             if (!this.lucid) throw new Error('Lucid not initialized');
 
-            const policy = await this.getDidPolicy();
-            const policyId = this.lucid.utils.mintingPolicyToId(policy);
+            let policy: any;
+            let policyId: string;
+            try {
+                policy = await this.getDidPolicy();
+                policyId = this.lucid.utils.mintingPolicyToId(policy);
+            } catch (e) {
+                policy = {
+                    type: 'Native',
+                    script: { type: 'sig', keyHash: ownerPublicKeyHash },
+                };
+                policyId = this.lucid.utils.mintingPolicyToId(policy);
+                this.logger.warn('Using native signature policy for DID minting');
+            }
             const assetName = this.lucid.utils.fromText('DID'); // Simple asset name
             const unit = policyId + assetName;
 
@@ -167,7 +178,7 @@ export class CardanoService implements OnModuleInit {
             const txHash = await signedTx.submit();
 
             this.logger.log(`DID minted. Tx: ${txHash}, PolicyID: ${policyId}`);
-            return { txHash, did: `did:cardano:${policyId}` };
+            return { txHash, did: `did:cardano:${unit}` };
         } catch (error) {
             this.logger.debug(`Blockchain DID minting unavailable: ${error.message}`);
             throw error;

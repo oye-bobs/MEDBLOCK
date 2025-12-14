@@ -14,13 +14,14 @@ export class DidService {
     async createDid(entityType: 'patient' | 'provider'): Promise<any> {
         this.logger.log(`Creating new DID for ${entityType}`);
 
+        let pubKeyHash: string | undefined;
         try {
             // Get the backend wallet's public key hash to use as the owner
             // In a real app, this would be the user's public key
             const lucid = this.cardanoService.getLucid();
             const address = await lucid.wallet.address();
             const details = lucid.utils.getAddressDetails(address);
-            const pubKeyHash = details.paymentCredential.hash;
+            pubKeyHash = details.paymentCredential.hash;
 
             // Generate a new private key for the entity
             const privateKey = lucid.utils.generatePrivateKey();
@@ -28,7 +29,7 @@ export class DidService {
             // In a real implementation, we would derive the DID from this key
             // For now, we use the backend wallet to mint the DID but return this key to the user
 
-            const result = await this.cardanoService.mintDid(pubKeyHash);
+            const result = await this.cardanoService.mintDid(pubKeyHash!);
 
             return {
                 did: result.did,
@@ -41,6 +42,7 @@ export class DidService {
             // Fallback to mock DID for various blockchain-related errors
             if (
                 error.message.includes('Could not load Aiken contract') ||
+                error.message.includes('Aiken contract not available') ||
                 error.message.includes('Lucid not initialized') ||
                 error.message.includes('Blockfrost')
             ) {
@@ -50,7 +52,7 @@ export class DidService {
                 return {
                     did: `did:medblock:${entityType}:${didSuffix}`,
                     private_key: `mock_private_key_${didSuffix}_${timestamp}`,
-                    controller: 'mock_controller',
+                    controller: pubKeyHash || 'mock_controller',
                     txHash: `mock_tx_${timestamp}`,
                     warning: 'This is a MOCK DID. Configure BLOCKFROST_PROJECT_ID and BLOCKFROST_URL in .env to enable real blockchain DIDs.',
                     createdAt: new Date().toISOString(),
