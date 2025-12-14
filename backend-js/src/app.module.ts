@@ -61,7 +61,9 @@ import { NotificationsModule } from './notifications/notifications.module';
           return {
             type: 'postgres',
             url: databaseUrl,
-            ssl: true,
+            ssl: {
+              rejectUnauthorized: false,
+            },
             extra: {
               ssl: {
                 rejectUnauthorized: false,
