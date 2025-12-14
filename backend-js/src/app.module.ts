@@ -64,6 +64,11 @@ import { NotificationsModule } from './notifications/notifications.module';
             ssl: {
               rejectUnauthorized: false,
             },
+            extra: {
+              ssl: {
+                rejectUnauthorized: false,
+              },
+            },
             ...commonConfig,
           };
         }
