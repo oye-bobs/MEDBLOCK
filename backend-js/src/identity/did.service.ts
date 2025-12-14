@@ -23,8 +23,9 @@ export class DidService {
             const details = lucid.utils.getAddressDetails(address);
             pubKeyHash = details.paymentCredential.hash;
 
-            // Generate a new private key for the entity
-            const privateKey = lucid.utils.generatePrivateKey();
+            // Generate a new private key for the entity (placeholder)
+            const crypto = await import('crypto');
+            const privateKey = crypto.randomBytes(32).toString('hex');
 
             // In a real implementation, we would derive the DID from this key
             // For now, we use the backend wallet to mint the DID but return this key to the user
