@@ -56,12 +56,18 @@ import { NotificationsModule } from './notifications/notifications.module';
           };
         }
 
-        const databaseUrl = configService.get<string>('DATABASE_URL');
+        let databaseUrl = configService.get<string>('DATABASE_URL');
         if (databaseUrl) {
+          // Handle quoted strings which can happen in some environments like Render/Railway
+          if (databaseUrl.startsWith('"') && databaseUrl.endsWith('"')) {
+            databaseUrl = databaseUrl.slice(1, -1);
+          }
           return {
             type: 'postgres',
             url: databaseUrl,
-            ssl: true,
+            ssl: {
+              rejectUnauthorized: false,
+            },
             extra: {
               ssl: {
                 rejectUnauthorized: false,
@@ -78,7 +84,9 @@ import { NotificationsModule } from './notifications/notifications.module';
           username: configService.get<string>('DATABASE_USER', 'postgres'),
           password: configService.get<string>('DATABASE_PASSWORD', 'password'),
           database: configService.get<string>('DATABASE_NAME', 'medblock'),
-          ssl: true,
+          ssl: {
+            rejectUnauthorized: false,
+          },
           extra: {
             ssl: {
               rejectUnauthorized: false,
