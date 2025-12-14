@@ -57,17 +57,28 @@ import { NotificationsModule } from './notifications/notifications.module';
         }
 
         const databaseUrl = configService.get<string>('DATABASE_URL');
+
+        // If provider handed you a CA (recommended), put it in DATABASE_SSL_CA as base64
+        // If you don't have CA and want to bypass verification (dev / quick fix), the fallback below sets rejectUnauthorized:false
+        const sslCaBase64 = configService.get<string>('DATABASE_SSL_CA');
+        let sslOption: any = undefined;
+        if (sslCaBase64) {
+          const ca = Buffer.from(sslCaBase64, 'base64').toString('utf8');
+          sslOption = { ca };
+        } else {
+          // Quick workaround for self-signed certs (not recommended for production)
+          sslOption = { rejectUnauthorized: false };
+        }
+
         if (databaseUrl) {
           return {
             type: 'postgres',
             url: databaseUrl,
-            ssl: {
-              rejectUnauthorized: false,
-            },
+            // ensure pg receives explicit ssl options
+            ssl: sslOption,
+            // some drivers expect options under extra as well
             extra: {
-              ssl: {
-                rejectUnauthorized: false,
-              },
+              ssl: sslOption,
             },
             ...commonConfig,
           };
@@ -80,13 +91,9 @@ import { NotificationsModule } from './notifications/notifications.module';
           username: configService.get<string>('DATABASE_USER', 'postgres'),
           password: configService.get<string>('DATABASE_PASSWORD', 'password'),
           database: configService.get<string>('DATABASE_NAME', 'medblock'),
-          ssl: {
-            rejectUnauthorized: false,
-          },
+          ssl: sslOption,
           extra: {
-            ssl: {
-              rejectUnauthorized: false,
-            },
+            ssl: sslOption,
           },
           ...commonConfig,
         };
