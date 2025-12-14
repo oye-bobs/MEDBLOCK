@@ -3,5 +3,7 @@ version = "0.0.0"
 licence = "Apache-2.0"
 description = "Aiken contracts for MedBlock DID"
 
-[dependencies]
-"aiken-lang/stdlib" = { version = "v1.9.0" }
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v1.9.0"
+source = "github"

@@ -98,10 +98,34 @@ export class CardanoService implements OnModuleInit {
         try {
             const fs = await import('fs/promises');
             const path = await import('path');
-            const plutusJsonPath = path.join(process.cwd(), 'aiken', 'plutus.json');
+            
+            // Try multiple possible paths for the plutus.json file
+            const possiblePaths = [
+                path.join(process.cwd(), 'aiken', 'plutus.json'),           // When running from backend-js
+                path.join(process.cwd(), '..', 'aiken', 'plutus.json'),     // When running from backend-js in monorepo
+                path.join(__dirname, '..', '..', 'aiken', 'plutus.json'),   // Relative to compiled dist
+                path.join(__dirname, '..', '..', '..', 'aiken', 'plutus.json'), // Relative to src in monorepo
+            ];
 
-            const content = await fs.readFile(plutusJsonPath, 'utf-8');
-            const plutusJson = JSON.parse(content);
+            let plutusJson;
+            let foundPath;
+            
+            for (const plutusJsonPath of possiblePaths) {
+                try {
+                    const content = await fs.readFile(plutusJsonPath, 'utf-8');
+                    plutusJson = JSON.parse(content);
+                    foundPath = plutusJsonPath;
+                    this.logger.log(`Found Aiken contract at: ${foundPath}`);
+                    break;
+                } catch (err) {
+                    // Continue to next path
+                    continue;
+                }
+            }
+
+            if (!plutusJson) {
+                throw new Error('plutus.json not found in any expected location');
+            }
 
             const validator = plutusJson.validators.find((v: any) => v.title === 'did_policy.did_policy');
 
@@ -114,8 +138,8 @@ export class CardanoService implements OnModuleInit {
                 script: validator.compiledCode,
             };
         } catch (error) {
-            this.logger.error('Failed to load DID policy', error);
-            throw new Error('Could not load Aiken contract. Please run "aiken build" in the aiken directory.');
+            // Don't log error here - it will be handled by the caller
+            throw new Error('Aiken contract not available. Run "aiken build" in the aiken directory to enable blockchain DIDs.');
         }
     }
 
@@ -145,7 +169,7 @@ export class CardanoService implements OnModuleInit {
             this.logger.log(`DID minted. Tx: ${txHash}, PolicyID: ${policyId}`);
             return { txHash, did: `did:cardano:${policyId}` };
         } catch (error) {
-            this.logger.error(`Failed to mint DID: ${error.message}`);
+            this.logger.debug(`Blockchain DID minting unavailable: ${error.message}`);
             throw error;
         }
     }
