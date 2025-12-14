@@ -100,4 +100,5 @@ import { NotificationsModule } from './notifications/notifications.module';
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
+
 export class AppModule { }
