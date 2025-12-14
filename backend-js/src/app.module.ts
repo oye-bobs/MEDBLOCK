@@ -62,6 +62,12 @@ import { NotificationsModule } from './notifications/notifications.module';
           if (databaseUrl.startsWith('"') && databaseUrl.endsWith('"')) {
             databaseUrl = databaseUrl.slice(1, -1);
           }
+          
+          // Remove SSL parameters from the URL as we'll set them explicitly
+          // This prevents conflicts with Railway's default SSL settings
+          databaseUrl = databaseUrl.replace(/[?&]sslmode=[^&]*/g, '');
+          databaseUrl = databaseUrl.replace(/[?&]ssl=[^&]*/g, '');
+          
           return {
             type: 'postgres',
             url: databaseUrl,
