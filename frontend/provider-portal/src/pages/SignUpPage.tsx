@@ -5,12 +5,12 @@ import { AuthContext } from '../App';
 import BackgroundLayer from '../components/BackgroundLayer';
 import { Shield, User, Mail, Lock, Building, Stethoscope, ArrowLeft, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiService } from '../services/api';
+import { requestProviderOtp } from '../services/api';
 import Swal from 'sweetalert2';
 
 const SignUpPage: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useContext(AuthContext);
+    const { } = useContext(AuthContext);
     const [step, setStep] = useState<'form' | 'generating' | 'complete'>('form');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -104,8 +104,7 @@ const SignUpPage: React.FC = () => {
         setStep('generating');
 
         try {
-            // Create provider DID automatically (no wallet needed)
-            const response = await apiService.createProviderDID({
+            const res = await requestProviderOtp({
                 fullName: formData.fullName,
                 email: formData.email,
                 hospitalName: formData.hospitalName,
@@ -113,40 +112,28 @@ const SignUpPage: React.FC = () => {
                 specialty: formData.specialty,
                 password: formData.password
             });
-
-
-            setStep('complete');
-
-            // Show success message
-            await Swal.fire({
-                icon: 'success',
-                title: 'Account Created!',
-                html: `
-                    <div class="text-left space-y-3">
-                        <p class="text-sm text-gray-600">Your provider account has been successfully created.</p>
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p class="text-xs text-blue-800 font-semibold mb-1">Your DID:</p>
-                            <p class="text-xs font-mono text-blue-900 break-all">${response.did}</p>
-                        </div>
-                        <p class="text-xs text-gray-500">You can now login to access the provider portal.</p>
-                    </div>
-                `,
-                confirmButtonText: 'Go to Login',
-                confirmButtonColor: '#3b82f6'
+            navigate('/verify-otp', {
+                state: {
+                    email: formData.email,
+                    registrationData: {
+                        fullName: formData.fullName,
+                        email: formData.email,
+                        hospitalName: formData.hospitalName,
+                        hospitalType: formData.hospitalType,
+                        specialty: formData.specialty,
+                        password: formData.password
+                    },
+                    devOtp: res?.devOtp
+                }
             });
-
-            // Auto-login and redirect
-            login(formData.fullName, response.did);
-            navigate('/dashboard');
-
-        } catch (error: any) {
-            console.error('Registration failed:', error);
             setStep('form');
-
+        } catch (error: any) {
+            console.error('OTP request failed:', error);
+            setStep('form');
             Swal.fire({
                 icon: 'error',
-                title: 'Registration Failed',
-                text: error.response?.data?.message || error.message || 'Failed to create account. Please try again.',
+                title: 'Request Failed',
+                text: error.response?.data?.message || error.message || 'Failed to send verification code. Please try again.',
                 confirmButtonColor: '#ef4444'
             });
         }

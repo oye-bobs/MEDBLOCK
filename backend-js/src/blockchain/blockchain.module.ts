@@ -4,7 +4,7 @@ import { HashService } from './hash.service';
 
 @Global()
 @Module({
-    providers: [CardanoService, HashService],
-    exports: [CardanoService, HashService],
+  providers: [CardanoService, HashService],
+  exports: [CardanoService, HashService],
 })
-export class BlockchainModule { }
+export class BlockchainModule {}

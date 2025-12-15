@@ -13,29 +13,32 @@ import { DiagnosticReport } from '../database/entities/diagnostic-report.entity'
 import { MedicationRequest } from '../database/entities/medication-request.entity';
 import { ConsentRecord } from '../database/entities/consent-record.entity';
 import { PatientsService } from './patients.service';
+import { OtpService } from './otp.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-    imports: [
-        PassportModule,
-        TypeOrmModule.forFeature([
-            Patient,
-            Practitioner,
-            Observation,
-            DiagnosticReport,
-            MedicationRequest,
-            ConsentRecord
-        ]),
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            useFactory: async (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET'),
-                signOptions: { expiresIn: '24h' },
-            }),
-            inject: [ConfigService],
-        }),
-    ],
-    controllers: [IdentityController],
-    providers: [DidService, DidAuthStrategy, PatientsService],
-    exports: [DidService, PatientsService],
+  imports: [
+    PassportModule,
+    TypeOrmModule.forFeature([
+      Patient,
+      Practitioner,
+      Observation,
+      DiagnosticReport,
+      MedicationRequest,
+      ConsentRecord,
+    ]),
+    EmailModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '24h' },
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+  controllers: [IdentityController],
+  providers: [DidService, DidAuthStrategy, PatientsService, OtpService],
+  exports: [DidService, PatientsService],
 })
-export class IdentityModule { }
+export class IdentityModule {}

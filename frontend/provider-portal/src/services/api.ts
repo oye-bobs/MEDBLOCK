@@ -38,19 +38,38 @@ class ApiService {
     }
 
     // Identity endpoints
-    async createProviderDID(data: {
+    requestProviderOtp = async (data: {
+        fullName: string
+        email: string
+        hospitalName: string
+        hospitalType: string
+        specialty: string
+        licenseNumber?: string
+        password: string
+    }) => {
+        const response = await this.client.post('/identity/practitioner/request-otp', data)
+        return response.data
+    }
+
+    verifyOtpAndCreateProvider = async (email: string, otp: string) => {
+        const response = await this.client.post('/identity/practitioner/verify-otp', { email, otp })
+        return response.data
+    }
+
+    // Legacy method - kept for backward compatibility
+    createProviderDID = async (data: {
         fullName: string
         email: string
         hospitalName: string
         hospitalType: string
         specialty: string
         password: string
-    }) {
+    }) => {
         const response = await this.client.post('/identity/practitioner/create', data)
         return response.data
     }
 
-    async loginProvider(email: string, password: string) {
+    loginProvider = async (email: string, password: string) => {
         const response = await this.client.post('/identity/practitioner/login', { email, password })
         if (response.data.accessToken) {
             localStorage.setItem('access_token', response.data.accessToken)
@@ -58,12 +77,12 @@ class ApiService {
         return response.data
     }
 
-    async getRecentProviders() {
+    getRecentProviders = async () => {
         const response = await this.client.get('/identity/practitioner/recent')
         return response.data
     }
 
-    async checkWallet(walletAddress: string) {
+    checkWallet = async (walletAddress: string) => {
         try {
             const response = await this.client.post('/identity/login-wallet', { walletAddress })
             return response.data
@@ -72,7 +91,7 @@ class ApiService {
         }
     }
 
-    async resolveDID(did: string) {
+    resolveDID = async (did: string) => {
         const response = await this.client.get('/identity/resolve/', {
             params: { did },
         })
@@ -84,46 +103,46 @@ class ApiService {
         return response.data
     }
 
-    async updateProviderProfile(data: any) {
+    updateProviderProfile = async (data: any) => {
         const response = await this.client.patch('/identity/provider/profile', data)
         return response.data
     }
 
     // Provider specific endpoints (examples)
-    async getMyPatients() {
+    getMyPatients = async () => {
         // Placeholder for when this endpoint exists
         const response = await this.client.get('/practitioner/patients')
         return response.data
     }
 
-    async getDashboardStats() {
+    getDashboardStats = async () => {
         const response = await this.client.get('/identity/practitioner/stats/dashboard')
         return response.data
     }
 
-    async searchPatients(query: string, page: number = 1, limit: number = 10) {
+    searchPatients = async (query: string, page: number = 1, limit: number = 10) => {
         const response = await this.client.get('/identity/patient/search', {
             params: { query, page, limit }
         })
         return response.data
     }
 
-    async getPatientDetails(did: string) {
+    getPatientDetails = async (did: string) => {
         const response = await this.client.get(`/identity/patient/${encodeURIComponent(did)}`)
         return response.data
     }
 
-    async getPatientObservations(did: string) {
+    getPatientObservations = async (did: string) => {
         const response = await this.client.get(`/records/observations/patient/${did}`)
         return response.data
     }
 
-    async getAuditLogs() {
+    getAuditLogs = async () => {
         const response = await this.client.get('/records/access-logs/provider/me')
         return response.data
     }
 
-    async createInteroperabilityRequest(data: { patientDid: string; type: string }) {
+    createInteroperabilityRequest = async (data: { patientDid: string; type: string }) => {
         // Map 'type' to 'purpose' and 'scope'
         const payload = {
             patientDid: data.patientDid,
@@ -134,55 +153,55 @@ class ApiService {
         return response.data
     }
 
-    async getPendingRequests() {
+    getPendingRequests = async () => {
         const response = await this.client.get('/consent/pending')
         return response.data
     }
 
-    async createObservation(data: any) {
+    createObservation = async (data: any) => {
         const response = await this.client.post('/records/observations', data)
         return response.data
     }
 
     // Notification endpoints
-    async getNotifications(status?: string) {
+    getNotifications = async (status?: string) => {
         const params = status ? { status } : {}
         const response = await this.client.get('/notifications', { params })
         return response.data
     }
 
-    async getUnreadNotificationCount() {
+    getUnreadNotificationCount = async () => {
         const response = await this.client.get('/notifications/unread-count')
         return response.data
     }
 
-    async markNotificationAsRead(notificationId: string) {
+    markNotificationAsRead = async (notificationId: string) => {
         const response = await this.client.post(`/notifications/${notificationId}/read`)
         return response.data
     }
 
-    async markAllNotificationsAsRead() {
+    markAllNotificationsAsRead = async () => {
         const response = await this.client.post('/notifications/read-all')
         return response.data
     }
 
-    async deleteNotification(notificationId: string) {
+    deleteNotification = async (notificationId: string) => {
         const response = await this.client.delete(`/notifications/${notificationId}`)
         return response.data
     }
 
     // Consent management endpoints
-    async approveConsentRequest(consentId: string) {
+    approveConsentRequest = async (consentId: string) => {
         const response = await this.client.post(`/consent/${consentId}/approve`)
         return response.data
     }
 
-    async rejectConsentRequest(consentId: string) {
+    rejectConsentRequest = async (consentId: string) => {
         const response = await this.client.post(`/consent/${consentId}/reject`)
         return response.data
     }
 
-    async getActiveConsents() {
+    getActiveConsents = async () => {
         const response = await this.client.get('/consent/active')
         return response.data
     }
@@ -190,3 +209,58 @@ class ApiService {
 
 
 export const apiService = new ApiService()
+
+// Export bound wrapper functions to preserve 'this' context
+export const requestProviderOtp = (data: {
+    fullName: string
+    email: string
+    hospitalName: string
+    hospitalType: string
+    specialty: string
+    licenseNumber?: string
+    password: string
+}) => apiService.requestProviderOtp(data)
+
+export const verifyOtpAndCreateProvider = (email: string, otp: string) =>
+    apiService.verifyOtpAndCreateProvider(email, otp)
+
+export const createProviderDID = (data: {
+    fullName: string
+    email: string
+    hospitalName: string
+    hospitalType: string
+    specialty: string
+    password: string
+}) => apiService.createProviderDID(data)
+
+export const loginProvider = (email: string, password: string) =>
+    apiService.loginProvider(email, password)
+
+export const getRecentProviders = () => apiService.getRecentProviders()
+export const checkWallet = (walletAddress: string) => apiService.checkWallet(walletAddress)
+export const resolveDID = (did: string) => apiService.resolveDID(did)
+export const getProfile = () => apiService.getProfile()
+export const updateProviderProfile = (data: any) => apiService.updateProviderProfile(data)
+export const getMyPatients = () => apiService.getMyPatients()
+export const getDashboardStats = () => apiService.getDashboardStats()
+export const searchPatients = (query: string, page: number = 1, limit: number = 10) =>
+    apiService.searchPatients(query, page, limit)
+export const getPatientDetails = (did: string) => apiService.getPatientDetails(did)
+export const getPatientObservations = (did: string) => apiService.getPatientObservations(did)
+export const getAuditLogs = () => apiService.getAuditLogs()
+export const createInteroperabilityRequest = (data: { patientDid: string; type: string }) =>
+    apiService.createInteroperabilityRequest(data)
+export const getPendingRequests = () => apiService.getPendingRequests()
+export const createObservation = (data: any) => apiService.createObservation(data)
+export const getNotifications = (status?: string) => apiService.getNotifications(status)
+export const getUnreadNotificationCount = () => apiService.getUnreadNotificationCount()
+export const markNotificationAsRead = (notificationId: string) =>
+    apiService.markNotificationAsRead(notificationId)
+export const markAllNotificationsAsRead = () => apiService.markAllNotificationsAsRead()
+export const deleteNotification = (notificationId: string) =>
+    apiService.deleteNotification(notificationId)
+export const approveConsentRequest = (consentId: string) =>
+    apiService.approveConsentRequest(consentId)
+export const rejectConsentRequest = (consentId: string) =>
+    apiService.rejectConsentRequest(consentId)
+export const getActiveConsents = () => apiService.getActiveConsents()

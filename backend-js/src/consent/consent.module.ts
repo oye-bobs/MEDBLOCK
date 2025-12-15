@@ -7,13 +7,13 @@ import { IdentityModule } from '../identity/identity.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([ConsentRecord, Patient, Practitioner]),
-        IdentityModule,
-        NotificationsModule,
-    ],
-    controllers: [ConsentController],
-    providers: [ConsentService],
-    exports: [ConsentService],
+  imports: [
+    TypeOrmModule.forFeature([ConsentRecord, Patient, Practitioner]),
+    IdentityModule,
+    NotificationsModule,
+  ],
+  controllers: [ConsentController],
+  providers: [ConsentService],
+  exports: [ConsentService],
 })
-export class ConsentModule { }
+export class ConsentModule {}

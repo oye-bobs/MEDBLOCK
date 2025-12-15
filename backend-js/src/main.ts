@@ -31,7 +31,9 @@ async function bootstrap() {
   ];
 
   if (process.env.CORS_ORIGIN) {
-    const envOrigins = process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(o => o.length > 0);
+    const envOrigins = process.env.CORS_ORIGIN.split(',')
+      .map((o) => o.trim())
+      .filter((o) => o.length > 0);
     allowedOrigins.push(...envOrigins);
   }
 
@@ -69,9 +71,7 @@ async function bootstrap() {
   // --------------------------------------------------
   const config = new DocumentBuilder()
     .setTitle('MEDBLOCK API')
-    .setDescription(
-      "Nigeria's Blockchain-Secured National EMR Infrastructure",
-    )
+    .setDescription("Nigeria's Blockchain-Secured National EMR Infrastructure")
     .setVersion('1.0')
     .addBearerAuth()
     .build();

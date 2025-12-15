@@ -1,0 +1,105 @@
+// Update SignUpPage.tsx to use OTP flow
+// Find and replace the handleSubmit function
+
+// BEFORE (lines 116-125):
+/*
+        try {
+            // Create provider DID automatically (no wallet needed)
+            const response = await apiService.createProviderDID({
+                fullName: formData.fullName,
+                email: formData.email,
+                hospitalName: formData.hospitalName,
+                hospitalType: formData.hospitalType,
+                specialty: formData.specialty,
+                password: formData.password
+            });
+*/
+
+// AFTER:
+/*
+        try {
+            // Request OTP instead of creating account directly
+            await apiService.requestProviderOtp({
+                fullName: formData.fullName,
+                email: formData.email,
+                hospitalName: formData.hospitalName,
+                hospitalType: formData.hospitalType,
+                specialty: formData.specialty,
+                password: formData.password
+            });
+*/
+
+// BEFORE (lines 127-151):
+/*
+            setStep('complete');
+
+            // Show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Account Created!',
+                html: `
+                    <div class="text-left space-y-3">
+                        <p class="text-sm text-gray-600">Your provider account has been successfully created.</p>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-xs text-blue-800 font-semibold mb-1">Your DID:</p>
+                            <p class="text-xs font-mono text-blue-900 break-all">${response.did}</p>
+                        </div>
+                        <p class="text-xs text-gray-500">You can now login to access the provider portal.</p>
+                    </div>
+                `,
+                confirmButtonText: 'Go to Login',
+                confirmButtonColor: '#3b82f6'
+            });
+
+            // Auto-login and redirect
+            login(formData.fullName, response.did);
+            navigate('/dashboard');
+*/
+
+// AFTER:
+/*
+            // Navigate to OTP verification page
+            navigate('/verify-otp', {
+                state: {
+                    email: formData.email,
+                    registrationData: {
+                        fullName: formData.fullName,
+                        email: formData.email,
+                        hospitalName: formData.hospitalName,
+                        hospitalType: formData.hospitalType,
+                        specialty: formData.specialty,
+                        password: formData.password
+                    }
+                }
+            });
+*/
+
+// BEFORE (lines 152-162):
+/*
+        } catch (error: any) {
+            console.error('Registration failed:', error);
+            setStep('form');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Failed',
+                text: error.response?.data?.message || error.message || 'Failed to create account. Please try again.',
+                confirmButtonColor: '#ef4444'
+            });
+        }
+*/
+
+// AFTER:
+/*
+        } catch (error: any) {
+            console.error('OTP request failed:', error);
+            setStep('form');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Request Failed',
+                text: error.response?.data?.message || error.message || 'Failed to send verification code. Please try again.',
+                confirmButtonColor: '#ef4444'
+            });
+        }
+*/

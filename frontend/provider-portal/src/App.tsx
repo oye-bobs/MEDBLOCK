@@ -11,6 +11,7 @@ import Profile from './pages/Profile'
 import Layout from './components/Layout'
 import LandingPage from './pages/LandingPage'
 import SignUpPage from './pages/SignUpPage'
+import OtpVerification from './pages/OtpVerification'
 import { NotificationProvider } from './context/NotificationContext'
 
 // Simple auth context
@@ -69,6 +70,7 @@ function App() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<SignUpPage />} />
+                    <Route path="/verify-otp" element={<OtpVerification />} />
 
                     <Route element={<Layout />}>
                         <Route

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Request, Query, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards, Request, Query, Patch, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { DidService } from './did.service';
@@ -14,14 +14,20 @@ import { DiagnosticReport } from '../database/entities/diagnostic-report.entity'
 import { MedicationRequest } from '../database/entities/medication-request.entity';
 import { ConsentRecord, ConsentStatus } from '../database/entities/consent-record.entity';
 import { PatientsService } from './patients.service';
+import { OtpService } from './otp.service';
+import { EmailService } from '../email/email.service';
 
 @ApiTags('identity')
 @Controller('identity')
 export class IdentityController {
+    private readonly logger = new Logger(IdentityController.name);
+    
     constructor(
         private didService: DidService,
         private jwtService: JwtService,
         private patientsService: PatientsService,
+        private otpService: OtpService,
+        private emailService: EmailService,
         @InjectRepository(Patient)
         private patientRepository: Repository<Patient>,
         @InjectRepository(Practitioner)
@@ -135,10 +141,89 @@ export class IdentityController {
         return { hasAccess, patientDid: did };
     }
 
-    @Post('practitioner/create')
-    @ApiOperation({ summary: 'Create a new Practitioner identity' })
-    @ApiResponse({ status: 201, description: 'Practitioner DID created successfully' })
-    async createPractitioner(@Body() dto: CreatePractitionerDto) {
+    @Post('practitioner/request-otp')
+    @ApiOperation({ summary: 'Request OTP for practitioner registration' })
+    @ApiResponse({ status: 200, description: 'OTP sent to email' })
+    async requestPractitionerOtp(@Body() dto: CreatePractitionerDto) {
+        try {
+            // Validate email doesn't already exist
+            const existing = await this.practitionerRepository
+                .createQueryBuilder('practitioner')
+                .where(`practitioner.telecom::jsonb @> :telecom::jsonb`, {
+                    telecom: JSON.stringify([{ system: 'email', value: dto.email }])
+                })
+                .getOne();
+
+            if (existing) {
+                throw new HttpException(
+                    'This email is already registered. Please use a different email or login instead.',
+                    HttpStatus.CONFLICT
+                );
+            }
+
+            const otp = this.otpService.storeOtp(dto.email, dto);
+            const sent = await this.emailService.sendOtpEmail(dto.email, otp, dto.fullName);
+            return {
+                message: 'Verification code sent successfully! Please check your email.',
+                email: dto.email,
+                expiresIn: 300,
+                devOtp: sent ? undefined : otp,
+            };
+        } catch (error) {
+            // If it's already an HttpException, rethrow it
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            
+            // Log the error for debugging
+            this.logger.error(`Failed to send OTP to ${dto.email}: ${error.message}`, error.stack);
+            
+            // Return user-friendly error
+            throw new HttpException(
+                'Failed to send verification code. Please try again or contact support if the problem persists.',
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @Post('practitioner/verify-otp')
+    @ApiOperation({ summary: 'Verify OTP and create practitioner account' })
+    @ApiResponse({ status: 201, description: 'Practitioner created successfully' })
+    async verifyOtpAndCreatePractitioner(@Body() body: { email: string; otp: string }) {
+        try {
+            // Verify OTP
+            const verification = this.otpService.verifyOtp(body.email, body.otp);
+
+            if (!verification.valid) {
+                throw new HttpException(
+                    verification.error || 'Invalid verification code. Please check and try again.',
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+
+            // Get registration data from OTP verification
+            const dto = verification.registrationData as CreatePractitionerDto;
+
+            // Now create the practitioner
+            return this.createPractitionerAccount(dto);
+        } catch (error) {
+            // If it's already an HttpException, rethrow it
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            
+            // Log the error for debugging
+            this.logger.error(`Failed to verify OTP for ${body.email}: ${error.message}`, error.stack);
+            
+            // Return user-friendly error
+            throw new HttpException(
+                'Failed to verify code and create account. Please try again or request a new code.',
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    private async createPractitionerAccount(dto: CreatePractitionerDto) {
         // 1. Hash password
         const bcrypt = require('bcrypt');
         const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -172,7 +257,8 @@ export class IdentityController {
             ...didResult,
             practitioner_id: savedPractitioner.id,
             name: dto.fullName,
-            email: dto.email
+            email: dto.email,
+            accessToken: this.jwtService.sign({ did: didResult.did, role: 'provider' })
         };
     }
 
