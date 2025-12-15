@@ -1,0 +1,42 @@
+[33mf94e237[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Remove env file and ignore secrets
+[33m771dddc[m updates
+[33m41c88f2[m updates
+[33m9faa208[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fixing backend issues
+[33m2e3cb92[m fixing backend issues
+[33m24ab096[m Fix Aiken contract path resolution and improve error handling
+[33m5cc7420[m Fix SSL certificate error for Railway PostgreSQL connection
+[33mbcca9ef[m fixes
+[33mae746dc[m fixes
+[33m2beba27[m fixes
+[33m143ac5c[m feat: Initialize core NestJS application module with database configuration, entity registration, and module imports.
+[33mef48ee8[m feat: Initialize core application module with database configuration, event emitter, and all core feature modules.
+[33m80cbf72[m fixes
+[33m1887b32[m db on render
+[33mcba64df[m db on render
+[33mf506af3[m db on render
+[33m59545cc[m db on render
+[33mf4f75a9[m fix: update CORS configuration to be robust and add logging
+[33ma598552[m feat: Implement core consent management, notification system, and access logging across backend, patient, and provider portals.
+[33m10d9847[m Update issue templates
+[33m4702629[m Merge pull request #1 from oye-bobs/thomas-dev
+[33mae8536a[m[33m ([m[1;31morigin/thomas-dev[m[33m, [m[1;32mthomas-dev[m[33m)[m feat: Implement core consent management, notification system, and access logging across backend, patient, and provider portals.
+[33m8cea7fb[m feat: Introduce provider portal with signup/login, backend identity service, and core Docker infrastructure.
+[33m1229f87[m feat: Introduce provider portal with signup/login, backend identity service, and core Docker infrastructure.
+[33m4624d10[m Merge first-test branch: resolved conflicts in package.json and Register.tsx
+[33mf69c60d[m feat: Add comprehensive API endpoint documentation for identity, medical records, consent, and access logs.
+[33m5f62b02[m[33m ([m[1;31morigin/first-test[m[33m)[m feat: Implement `useCardanoWallet` hook for connecting, managing, and signing messages with Cardano wallets, including robust address sanitization and normalization.
+[33m4ca76aa[m feat: Implement useCardanoWallet hook and update entity schemas
+[33m86452ee[m fix: remove window.cardano declaration
+[33m9977f9f[m first commit for first-test
+[33ma712a0f[m Merge branch 'main' of https://github.com/oye-bobs/MEDBLOCK into thomas-dev - keeping local frontend changes
+[33me9d205b[m Update technology stack in README
+[33m3c9b291[m Revise project status and backend framework in READMEupdated
+[33m1f28d09[m Update backend development section to Node
+[33m925a408[m Update technology stack in README
+[33m1c1931a[m frontend done
+[33mf2b2663[m feat: Add demo data seeding command, DID manager, and frontend authentication and Cardano wallet integration with mock data.
+[33m22be22e[m thomass
+[33m20e0199[m feat(patient-portal): add demo mode, mock demo data and Auth provider
+[33m501133e[m Update patient portal to demo mode with mocked wallet and add frontend testing docs
+[33m5955d9d[m fixed provider page for testing and added new features
+[33m09bc868[m first medbloc commit
