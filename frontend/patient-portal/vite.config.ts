@@ -3,30 +3,41 @@ import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
-// Config with WASM/Mesh SDK plugins and fixes for buffer polyfill issues
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+    }),
     wasm(),
     topLevelAwait(),
     nodePolyfills({
-      exclude: ['buffer'],  // Skip the plugin's buffer polyfill/shim to avoid ENOENT errors
+      exclude: ['buffer'],
       globals: {
-        Buffer: true,  // Inject global Buffer using standalone 'buffer' package
+        Buffer: true,
         global: true,
         process: true,
       },
       protocolImports: true,
     }),
+    visualizer({
+      filename: 'build/bundle-report.html',
+      open: false,
+    }),
   ],
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // Removed problematic shim aliases; exclusion in plugin handles this now
     },
   },
+
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+  },
+
   server: {
     port: 3000,
     proxy: {
@@ -36,9 +47,10 @@ export default defineConfig({
       },
     },
   },
+
   build: {
     outDir: 'build',
-    sourcemap: true,
+    sourcemap: false,
     commonjsOptions: {
       transformMixedEsModules: true,
     },
