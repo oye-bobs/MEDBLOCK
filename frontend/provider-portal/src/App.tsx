@@ -12,6 +12,7 @@ import Layout from './components/Layout'
 import LandingPage from './pages/LandingPage'
 import SignUpPage from './pages/SignUpPage'
 import OtpVerification from './pages/OtpVerification'
+import MyPatients from './pages/MyPatients'
 import { NotificationProvider } from './context/NotificationContext'
 
 // Simple auth context
@@ -101,6 +102,10 @@ function App() {
                         <Route
                             path="/profile"
                             element={isAuthenticated ? <Profile /> : <Navigate to="/login" />}
+                        />
+                        <Route
+                            path="/my-patients"
+                            element={isAuthenticated ? <MyPatients /> : <Navigate to="/login" />}
                         />
                     </Route>
                 </Routes>

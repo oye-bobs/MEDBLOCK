@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     Lock
 } from 'lucide-react'
+import Swal from 'sweetalert2'
 import { apiService } from '../services/api'
 
 export default function PatientRecords() {
@@ -41,7 +42,19 @@ export default function PatientRecords() {
                 }
 
                 setPatient({
-                    name: patientData.name?.[0]?.text || 'Unknown Patient',
+                    name: (() => {
+                        const pName = patientData.name;
+                        if (!pName) return 'Unknown Patient';
+                        if (typeof pName === 'string') return pName;
+                        if (Array.isArray(pName) && pName.length > 0) {
+                             const nameRecord = pName[0];
+                             if (nameRecord.text) return nameRecord.text;
+                             const given = Array.isArray(nameRecord.given) ? nameRecord.given.join(' ') : (nameRecord.given || '');
+                             const family = nameRecord.family || '';
+                             return `${given} ${family}`.trim() || 'Unknown Patient';
+                        }
+                        return 'Unknown Patient';
+                    })(),
                     id: patientId,
                     age: calculateAge(patientData.birthDate),
                     gender: patientData.gender || 'Unknown',
@@ -81,10 +94,20 @@ export default function PatientRecords() {
                 patientDid: patientId,
                 type: 'clinical-records' // Purpose/Scope
             })
-            alert("Access request sent to patient.")
+            Swal.fire({
+                title: 'Request Sent',
+                text: 'Access request sent to patient.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            })
         } catch (error) {
             console.error("Failed to request access", error)
-            alert("Failed to send request.")
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to send request.',
+                icon: 'error'
+            })
         } finally {
             setRequesting(false)
         }

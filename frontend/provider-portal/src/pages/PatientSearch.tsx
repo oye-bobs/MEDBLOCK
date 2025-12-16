@@ -26,12 +26,17 @@ export default function PatientSearch() {
 
             const mappedResults = data.map((p: any) => {
                 const getName = () => {
-                    const nameObj = p.name?.[0];
-                    if (!nameObj) return 'Unknown';
-                    if (nameObj.text) return nameObj.text;
-                    const given = Array.isArray(nameObj.given) ? nameObj.given.join(' ') : (nameObj.given || '');
-                    const family = nameObj.family || '';
-                    return `${given} ${family}`.trim() || 'Unknown';
+                    const pName = p.name;
+                    if (!pName) return 'Unknown Patient';
+                    if (typeof pName === 'string') return pName;
+                    if (Array.isArray(pName) && pName.length > 0) {
+                        const nameRecord = pName[0];
+                        if (nameRecord.text) return nameRecord.text;
+                        const given = Array.isArray(nameRecord.given) ? nameRecord.given.join(' ') : (nameRecord.given || '');
+                        const family = nameRecord.family || '';
+                        return `${given} ${family}`.trim() || 'Unknown Patient';
+                    }
+                    return 'Unknown Patient';
                 };
 
                 return {

@@ -110,8 +110,7 @@ class ApiService {
 
     // Provider specific endpoints (examples)
     getMyPatients = async () => {
-        // Placeholder for when this endpoint exists
-        const response = await this.client.get('/practitioner/patients')
+        const response = await this.client.get('/identity/provider/patients')
         return response.data
     }
 

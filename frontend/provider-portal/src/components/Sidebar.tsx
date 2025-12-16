@@ -46,6 +46,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, o
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'My Patients', href: '/my-patients', icon: User },
         { name: 'Patient Search', href: '/patients/search', icon: Search },
         { name: 'Interoperability', href: '/interoperability', icon: Share2 },
         { name: 'Audit Logs', href: '/audit-logs', icon: Activity },

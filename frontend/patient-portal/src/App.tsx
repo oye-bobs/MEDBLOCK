@@ -12,6 +12,7 @@ import BackgroundLayer from './components/BackgroundLayer'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
 import UserSelection from './pages/UserSelection'
+import AuthorizedProviders from './pages/AuthorizedProviders'
 import { NotificationProvider } from './context/NotificationContext'
 
 const queryClient = new QueryClient()
@@ -40,6 +41,7 @@ function AppRoutes() {
             >
                 <Route path='/dashboard' element={<Dashboard />} />
                 <Route path="records" element={<Records />} />
+                <Route path="authorized-providers" element={<AuthorizedProviders />} />
                 <Route path="consent" element={<Consent />} />
                 <Route path="access-log" element={<AccessLog />} />
                 <Route path="profile" element={<Profile />} />

@@ -37,10 +37,16 @@ export default function AuditLogs() {
     const [filterResource, setFilterResource] = useState<string>('all')
 
     // Get patient name safely
+    // Get patient name safely
     const getPatientName = (patient: any) => {
-        if (!patient) return 'Unknown Patient'
-        if (patient.name && Array.isArray(patient.name) && patient.name.length > 0) {
-            return patient.name[0].text || 'Unknown Patient'
+        if (!patient || !patient.name) return 'Unknown Patient';
+        if (typeof patient.name === 'string') return patient.name;
+        if (Array.isArray(patient.name) && patient.name.length > 0) {
+             const nameRecord = patient.name[0];
+             if (nameRecord.text) return nameRecord.text;
+             const given = Array.isArray(nameRecord.given) ? nameRecord.given.join(' ') : (nameRecord.given || '');
+             const family = nameRecord.family || '';
+             return `${given} ${family}`.trim() || 'Unknown Patient';
         }
         return 'Unknown Patient'
     }

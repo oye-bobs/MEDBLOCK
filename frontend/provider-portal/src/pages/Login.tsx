@@ -229,7 +229,7 @@ export default function Login() {
 
                     {/* Footer Links */}
                     <div className="mt-8 text-center space-y-4">
-                        <a href="http://localhost:3000/user-selection" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
+                        <a href={`${PORTAL_URLS.PATIENT}/user-selection`} className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
                             <ArrowLeft size={16} /> Back to Role Selection
                         </a>
 

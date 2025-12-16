@@ -82,13 +82,11 @@ async function bootstrap() {
   // --------------------------------------------------
   // SERVER
   // --------------------------------------------------
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 8000;
   await app.listen(port, '0.0.0.0');
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`🚀 MEDBLOCK API running on port ${port}`);
-    console.log(`📘 Swagger → /api/docs`);
-  }
+  console.log(`🚀 MEDBLOCK API running on port ${port}`);
+  console.log(`📘 Swagger → /api/docs`);
 }
 
 bootstrap();

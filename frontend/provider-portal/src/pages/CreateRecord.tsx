@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, CheckCircle, Clock, Lock, Upload, File as FileIcon, ChevronRight, AlertCircle, Trash2 } from 'lucide-react'
@@ -21,6 +21,33 @@ export default function CreateRecord() {
     const [file, setFile] = useState<File | null>(null)
     const [filePreview, setFilePreview] = useState<string | null>(null)
     const [dragActive, setDragActive] = useState(false)
+    const [patientName, setPatientName] = useState<string>('')
+
+    useEffect(() => {
+        const fetchPatient = async () => {
+            if (!patientId) return
+            try {
+                const data = await apiService.getPatientDetails(patientId)
+                // Extract name logic
+                const pName = data.name;
+                let name = 'Unknown Patient';
+                if (typeof pName === 'string') name = pName;
+                else if (Array.isArray(pName) && pName.length > 0) {
+                    const nameRecord = pName[0];
+                    if (nameRecord.text) name = nameRecord.text;
+                    else {
+                        const given = Array.isArray(nameRecord.given) ? nameRecord.given.join(' ') : (nameRecord.given || '');
+                        const family = nameRecord.family || '';
+                        name = `${given} ${family}`.trim() || 'Unknown Patient';
+                    }
+                }
+                setPatientName(name)
+            } catch (error) {
+                console.error("Failed to fetch patient name", error)
+            }
+        }
+        fetchPatient()
+    }, [patientId])
 
     // Handle File Drop
     const handleDrag = (e: React.DragEvent) => {
@@ -173,7 +200,9 @@ export default function CreateRecord() {
                         >
                             <ChevronLeft size={24} />
                         </button>
-                        <h1 className="text-xl font-bold text-gray-900">Create New Record</h1>
+                        <h1 className="text-xl font-bold text-gray-900">
+                            Create New Record {patientName ? `for ${patientName}` : ''}
+                        </h1>
                     </div>
                 </div>
             </header>

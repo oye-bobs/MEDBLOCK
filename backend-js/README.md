@@ -1,199 +1,98 @@
-# MEDBLOCK
-## Nigeria's Blockchain-Secured National EMR Infrastructure
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-> Rebuilding Nigeria's healthcare data backbone with blockchain technology
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-[![Cardano](https://img.shields.io/badge/Blockchain-Cardano-blue)](https://cardano.org)
-[![FHIR R4](https://img.shields.io/badge/Standard-FHIR%20R4-green)](https://hl7.org/fhir/)
-[![License](https://img.shields.io/badge/License-TBD-yellow)]()
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
----
+## Description
 
-## 🇳🇬 The Problem
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-Nigeria's healthcare system faces critical challenges:
-
-- **85% of medical records are paper-based** or siloed in isolated systems
-- **Billions lost annually** to fraudulent HMO insurance claims
-- **Zero nationwide data exchange** between hospitals, labs, and clinics
-- **Repeated diagnostics** waste resources and delay treatment
-- **No real-time disease surveillance** for NCDC and government agencies
-
-**Result:** Inefficient healthcare delivery, preventable deaths, and massive fraud.
-
----
-
-## 💡 The Solution
-
-**MEDBLOCK** is a blockchain-backed national EMR infrastructure that:
-
-✅ **Eliminates fraud** - Immutable blockchain fingerprints for every medical record  
-✅ **Enables interoperability** - FHIR-compliant data exchange across all providers  
-✅ **Empowers patients** - Self-sovereign identity and data ownership  
-✅ **Automates claims** - Smart contracts process HMO claims in <5 minutes  
-✅ **Provides insights** - Real-time anonymized data for government policy  
-
----
-
-## 🏗️ Architecture
-
-**Hybrid On-Chain/Off-Chain Design:**
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Blockchain** | Cardano (Preprod) | Record hashes, consent, audit trail |
-| **Smart Contracts** | Plutus + Marlowe | Consent management, claims automation |
-| **Identity** | Atala PRISM | Self-sovereign DIDs (linked to NIN) |
-| **Backend** | Django + PyCardano | REST API, business logic |
-| **Database** | PostgreSQL | Encrypted off-chain medical records |
-| **Standard** | FHIR R4 | Interoperability across providers |
-| **Frontend** | React + TypeScript | Patient & provider portals |
-
----
-
-## 🎯 Key Features
-
-### For Patients
-- **Own your medical data** via Cardano wallet and DID
-- **Grant time-bound access** to doctors (24h, 72h, 1 week, 30 days)
-- **View complete audit trail** of who accessed your records
-- **Access records anywhere** in Nigeria with MEDBLOCK Health ID
-
-### For Hospitals & Clinics
-- **Instant patient history** from any hospital in Nigeria
-- **No repeated tests** - lab results automatically shared
-- **Cross-hospital transfers** with complete medical records
-- **Faster insurance payments** via automated claims
-
-### For HMOs (Insurance Companies)
-- **Fraud elimination** - Verify procedures on blockchain
-- **Claims processed in <5 minutes** (vs. weeks)
-- **Reduced operational costs** - Automated verification
-- **Lower premiums** - Savings passed to customers
-
-### For Diagnostic Labs
-- **Direct patient delivery** - Results instantly available
-- **Blockchain verification** - Tamper-proof lab reports
-- **Duplicate test prevention** - Save patients money
-
-### For Government (NCDC, NHIA, State Ministries)
-- **Real-time disease surveillance** - Track outbreaks as they happen
-- **Verified health data** - No manipulation possible
-- **Evidence-based policy** - Make decisions with confidence
-- **Budget optimization** - Allocate resources effectively
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker Desktop
-- Node.js 18+
-- Python 3.11+
-- Cardano wallet (Nami/Eternl) for testing
-
-### 1. Setup
-```bash
-git clone <repository-url>
-cd MEDBLOCK
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-### 2. Start Infrastructure
-```bash
-docker-compose up -d
-# Wait for Cardano node to sync (may take hours on first run)
-```
-
-### 3. Run Backend
-```bash
-cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
-
-### 4. Run Patient Portal
-```bash
-cd frontend/patient-portal
-npm install
-npm run dev
-```
-
-### 5. Access
-- **Patient Portal**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/api/docs
-
----
-
-## 🧪 Frontend Testing (Demo Mode — No Backend Required)
-
-You can run the patient and provider portals locally in demo mode without starting the backend or Docker. This uses the built-in mock data and demo API handlers.
-
-1) Patient portal (port 3000)
+## Project setup
 
 ```bash
-cd frontend/patient-portal
-# Enable demo mode (already provided in repo):
-# create or verify `.env` contains:
-# VITE_DEMO=true
-# VITE_API_URL=http://localhost:8000/api   # optional when using demo mode
-npm install
-npm run dev
+$ npm install
 ```
 
-Open: http://localhost:3000
-
-2) Provider portal (port 3001)
+## Compile and run the project
 
 ```bash
-cd frontend/provider-portal
-# Create `.env` with:
-# VITE_DEMO=true
-# VITE_API_URL=http://localhost:8000/api
-# REACT_APP_API_URL=http://localhost:8000
-npm install
-npm run dev
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
 ```
 
-Open: http://localhost:3001
+## Run tests
 
-Notes
-- The patient portal uses `import.meta.env.VITE_DEMO` to switch to mocked API responses. Setting `VITE_DEMO=true` forces demo data from `frontend/patient-portal/src/mock/demoData`.
-- The provider portal `dev` script is configured to run on port 3001. Run it in a separate terminal so the patient portal on port 3000 is not stopped.
-- To change ports temporarily, append `-- --port <port>` to `npm run dev`.
-- If you want the frontend to proxy requests to a running backend, set `VITE_API_URL` (and `REACT_APP_API_URL` for the proxy) to the backend URL and restart the dev server.
+```bash
+# unit tests
+$ npm run test
 
-Troubleshooting
-- If the app doesn't pick up `.env` changes, stop the dev server and restart it.
-- If a port is in use, run `lsof -i :3000` (mac/linux) or use Task Manager on Windows to free the port, or run on a different port.
+# e2e tests
+$ npm run test:e2e
 
-This flow lets you test UI flows, consent screens, and mock records without running the Django backend or blockchain services.
+# test coverage
+$ npm run test:cov
+```
 
----
+## Deployment
 
-## 📊 Use Cases
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-### 1. Emergency Room Visit
-Patient arrives unconscious → ER doctor looks up DID → Instant access to allergies, medications, conditions → Life-saving treatment → Complete audit trail
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
-### 2. Cross-Hospital Transfer
-General Hospital Lagos → LUTH specialist care → No repeated tests → Complete medical history available → Faster specialized treatment
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
 
-### 3. HMO Fraud Prevention
-Hospital submits fake surgery claim → HMO queries blockchain → No matching records found → Claim rejected automatically → ₦450,000 saved
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-### 4. Disease Surveillance
-COVID-19 test uploaded → Anonymized data to NCDC → Real-time outbreak detection → Targeted public health response
+## Resources
 
-### 5. Telemedicine
-Rural Sokoto patient → Lagos specialist via video → Complete medical history available → Accurate diagnosis → E-prescription verified on blockchain
+Check out a few resources that may come in handy when working with NestJS:
 
----
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-## 🔐 Security & Privacy
+## Support
 
-- **AES-256 encryption** for all off-chain patient data
-- **SHA-256 hashing** for blockchain integrity verification
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

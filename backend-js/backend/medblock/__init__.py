@@ -1,1 +1,0 @@
-# MEDBLOCK Django project

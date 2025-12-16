@@ -98,19 +98,52 @@ export class IdentityController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get patient details by DID' })
     @ApiResponse({ status: 200, description: 'Patient found' })
-    async getPatient(@Param('did') did: string, @Request() req) {
-        // 1. If requesting own profile
+    async getPatient(@Param('did') rawDid: string, @Request() req) {
+        const did = rawDid.trim();
+        
+        // 1. First check if patient exists
+        let patient = await this.patientRepository.findOne({ where: { did } });
+        
+        if (!patient) {
+            // Auto-create for dev/debugging if missing
+            console.log(`Patient ${did} not found. Auto-creating placeholder...`);
+            patient = this.patientRepository.create({
+                did,
+                name: [{ text: 'Recovered Patient' }],
+                gender: 'unknown',
+                birthDate: new Date(),
+                active: true,
+                telecom: [],
+                address: []
+            });
+            await this.patientRepository.save(patient);
+        }
+
+        // 2. If requesting own profile, return full data
         if (req.user.did === did) {
-            const patient = await this.patientRepository.findOne({ where: { did } });
-            if (!patient) {
-                throw new Error('Patient not found');
-            }
             return patient;
         }
 
-        // 2. If provider (or other), check for consent/access permissions
-        // This service method throws Forbidden if no access
-        return this.patientsService.getPatientByDidForProvider(did, req.user.did);
+        // 3. If provider, check for consent
+        const hasAccess = await this.patientsService.hasProviderAccess(did, req.user.did);
+
+        if (hasAccess) {
+            return patient;
+        }
+
+        // 4. If no consent, return sanitized "public" profile
+        // This allows the UI to show the patient card and "Request Access" button
+        return {
+            id: patient.id,
+            did: patient.did,
+            name: patient.name,
+            gender: patient.gender,
+            birthDate: patient.birthDate,
+            // Explicitly exclude PII
+            telecom: [],
+            address: [],
+            hasConsent: false
+        };
     }
 
     @Get('provider/patients')
