@@ -1,0 +1,9 @@
+name = "medblock/did"
+version = "0.0.0"
+licence = "Apache-2.0"
+description = "Aiken contracts for MedBlock DID"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v1.9.0"
+source = "github"

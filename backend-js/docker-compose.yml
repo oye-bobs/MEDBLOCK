@@ -1,0 +1,198 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # Cardano Node (Preprod Testnet)
+  # ============================================
+  cardano-node:
+    image: inputoutput/cardano-node:8.7.3
+    container_name: medblock-cardano-node
+    environment:
+      - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
+    volumes:
+      - cardano-node-data:/opt/cardano/data
+      - cardano-node-ipc:/opt/cardano/ipc
+      - ./infrastructure/cardano-node/config:/opt/cardano/config:ro
+    command: >
+      run --topology /opt/cardano/config/topology.json --database-path /opt/cardano/data --socket-path /opt/cardano/ipc/node.socket --config /opt/cardano/config/config.json
+    ports:
+      - "3001:3001" # Node-to-node communication
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "cardano-cli query tip --testnet-magic 1 --socket-path /opt/cardano/ipc/node.socket" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - medblock-network
+
+  # ============================================
+  # PostgreSQL Database (Off-Chain Storage)
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: medblock-postgres
+    environment:
+      - POSTGRES_DB=${DB_NAME:-medblock_db}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-abasthomas}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-medblock_user}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medblock-network
+
+  # ============================================
+  # Redis (Caching & Session Management)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: medblock-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medblock-network
+
+  # ============================================
+  # Backend API (Django/FastAPI)
+  # ============================================
+  # ============================================
+  # Backend API (NestJS)
+  # ============================================
+  backend:
+    build:
+      context: ./backend-js
+      dockerfile: ../infrastructure/docker/backend/Dockerfile
+    container_name: medblock-backend
+    environment:
+      - PORT=8000
+      - DATABASE_TYPE=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DB_NAME:-medblock_db}
+      - DATABASE_USER=${DB_USER:-postgres}
+      - DATABASE_PASSWORD=${DB_PASSWORD:-abasthomas}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
+      - CARDANO_NODE_SOCKET_PATH=/opt/cardano/ipc/node.socket
+      - PRISM_API_KEY=${PRISM_API_KEY}
+      - PRISM_NODE_URL=${PRISM_NODE_URL}
+      - JWT_SECRET=${JWT_SECRET_KEY:-supersecretkey}
+    env_file:
+      - ./backend-js/.env
+    volumes:
+      - ./backend-js:/app
+      - /app/node_modules
+      - cardano-node-ipc:/opt/cardano/ipc:ro
+      - backend-logs:/var/log/medblock
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      cardano-node:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run start:dev
+    networks:
+      - medblock-network
+
+  # ============================================
+  # Patient Portal (React Frontend)
+  # ============================================
+  patient-portal:
+    build:
+      context: ./frontend/patient-portal
+      dockerfile: ../../infrastructure/docker/frontend/Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+        - REACT_APP_CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
+    container_name: medblock-patient-portal
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - medblock-network
+
+  # ============================================
+  # Provider Portal (React Frontend)
+  # ============================================
+  provider-portal:
+    build:
+      context: ./frontend/provider-portal
+      dockerfile: ../../infrastructure/docker/frontend/Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+        - REACT_APP_CARDANO_NETWORK=${CARDANO_NETWORK:-preprod}
+    container_name: medblock-provider-portal
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - medblock-network
+  # ============================================
+  # Nginx Reverse Proxy (Optional - Production)
+  # ============================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: medblock-nginx
+  #   volumes:
+  #     - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - backend
+  #     - patient-portal
+  #     - provider-portal
+  #   restart: unless-stopped
+  #   networks:
+  #     - medblock-network
+
+  # ============================================
+  # Persistent Volumes
+  # ============================================
+volumes:
+  cardano-node-data:
+    driver: local
+  cardano-node-ipc:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  backend-logs:
+    driver: local
+
+# ============================================
+# Network Configuration
+# ============================================
+networks:
+  medblock-network:
+    driver: bridge
