@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Building, Stethoscope, Ban, Clock, User } from 'lucide-react'
+import { Shield, Building, Stethoscope, Ban, Clock } from 'lucide-react'
 import { apiService } from '../services/api'
 import Swal from 'sweetalert2'
 

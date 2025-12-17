@@ -78,6 +78,7 @@ export default function ProviderQRModal({ isOpen, onClose }: ProviderQRModalProp
                                         Loading...
                                     </div>
                                 ) : profile?.did ? (
+                                    // @ts-ignore
                                     <QRCodeSVG value={profile.did} size={200} level="H" />
                                 ) : (
                                     <div className={qrPlaceholderClasses}>
@@ -129,6 +130,8 @@ export default function ProviderQRModal({ isOpen, onClose }: ProviderQRModalProp
                             {/* QR Code */}
                             <div className="flex items-center justify-center p-8 bg-white">
                                 {profile?.did && (
+                                    // @ts-ignore
+                                    // @ts-ignore
                                     <QRCodeSVG 
                                         value={profile.did} 
                                         size={350} 
