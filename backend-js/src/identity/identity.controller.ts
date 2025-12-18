@@ -219,6 +219,110 @@ export class IdentityController {
         }
     }
 
+    @Post('practitioner/resend-otp')
+    @ApiOperation({ summary: 'Resend OTP for practitioner registration' })
+    @ApiResponse({ status: 200, description: 'OTP resent to email' })
+    async resendPractitionerOtp(@Body() body: CreatePractitionerDto) {
+        try {
+            // We reuse requestPractitionerOtp logic but ensure we have the full DTO
+            // The frontend must send the full registration data again to ensure
+            // the OTP service has the complete data for account creation.
+            
+            // Check if user is already registered
+             const existing = await this.practitionerRepository
+                .createQueryBuilder('practitioner')
+                .where(`practitioner.telecom::jsonb @> :telecom::jsonb`, {
+                    telecom: JSON.stringify([{ system: 'email', value: body.email }])
+                })
+                .getOne();
+
+            if (existing) {
+                throw new HttpException(
+                    'This email is already registered. Please login instead.',
+                    HttpStatus.CONFLICT
+                );
+            }
+
+            return this.requestPractitionerOtp(body);
+
+        } catch (error) {
+             if (error instanceof HttpException) {
+                throw error;
+            }
+            this.logger.error(`Failed to resend OTP to ${body.email}: ${error.message}`, error.stack);
+            throw new HttpException(
+                'Failed to resend verification code.',
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    @Post('practitioner/forgot-password')
+    @ApiOperation({ summary: 'Request password reset OTP' })
+    @ApiResponse({ status: 200, description: 'Password reset OTP sent' })
+    async requestPasswordReset(@Body() body: { email: string }) {
+        const practitioner = await this.practitionerRepository
+            .createQueryBuilder('practitioner')
+            .where(`practitioner.telecom::jsonb @> :telecom::jsonb`, {
+                telecom: JSON.stringify([{ system: 'email', value: body.email }])
+            })
+            .getOne();
+
+        if (!practitioner) {
+            // Don't reveal if user exists or not for security, but for now let's be helpful or standard.
+            // Standard is "If that email exists, we sent a link".
+            // But we need to send an OTP.
+            // If we return success but don't send email, user waits for nothing.
+            // Let's return success but log warning.
+            return { message: 'If your email is registered, you will receive a verification code.' };
+        }
+
+        const otp = this.otpService.storeOtp(body.email, { type: 'PASSWORD_RESET', id: practitioner.id });
+        const name = practitioner.name?.[0]?.text || 'Provider';
+        await this.emailService.sendOtpEmail(body.email, otp, name);
+        
+        return { message: 'Verification code sent to your email.', expiresIn: 300 };
+    }
+
+    @Post('practitioner/reset-password')
+    @ApiOperation({ summary: 'Reset password with OTP' })
+    @ApiResponse({ status: 200, description: 'Password reset successfully' })
+    async resetPassword(@Body() body: { email: string; otp: string; newPassword: string }) {
+        // Verify OTP
+        const verification = this.otpService.verifyOtp(body.email, body.otp);
+
+        if (!verification.valid) {
+             throw new HttpException(
+                'Invalid or expired verification code.',
+                HttpStatus.BAD_REQUEST
+            );
+        }
+        
+        const data = verification.registrationData as any;
+        if (data?.type !== 'PASSWORD_RESET') {
+             throw new HttpException(
+                'Invalid verification code type.',
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const practitioner = await this.practitionerRepository.findOne({ where: { id: data.id } });
+        if (!practitioner) {
+            throw new HttpException('Provider not found.', HttpStatus.NOT_FOUND);
+        }
+
+        // Hash new password
+        const bcrypt = require('bcrypt');
+        const hashedPassword = await bcrypt.hash(body.newPassword, 10);
+
+        if (!practitioner.meta) practitioner.meta = {};
+        practitioner.meta.password = hashedPassword;
+
+        await this.practitionerRepository.save(practitioner);
+
+        return { message: 'Password has been reset successfully. You can now login.' };
+    }
+
     @Post('practitioner/verify-otp')
     @ApiOperation({ summary: 'Verify OTP and create practitioner account' })
     @ApiResponse({ status: 201, description: 'Practitioner created successfully' })
@@ -321,6 +425,17 @@ export class IdentityController {
             console.log('Patient entity created, attempting to save...');
             const savedPatient = await this.patientRepository.save(patient);
             console.log('Patient saved successfully:', savedPatient.id);
+
+            // Send welcome email if email exists
+            const email = createPatientDto.telecom?.find(t => t.system === 'email')?.value;
+            const name = createPatientDto.name?.[0]?.text || 'Patient';
+            if (email) {
+                try {
+                    await this.emailService.sendWelcomeEmail(email, name);
+                } catch (emailError) {
+                    console.error('Failed to send welcome email to patient:', emailError);
+                }
+            }
 
             // 3. Return combined result
             return {

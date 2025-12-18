@@ -27,6 +27,7 @@ import {
     ConsentItem
 } from '../components/DashboardComponents'
 import BackgroundLayer from '../components/BackgroundLayer'
+import logo from '../assets/favicon.png'
 
 export default function Dashboard() {
     const { did, profile } = useAuth()
@@ -279,6 +280,15 @@ export default function Dashboard() {
             className="space-y-4 md:space-y-6"
         >
             <BackgroundLayer />
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-[#20305B]">MEDBLOCK</h1>
+                    <img src={logo} alt="MEDBLOCK" className="h-12 w-12" />
+                </div>
+                <span className="hidden md:block text-xs text-gray-500 font-medium tracking-wider">
+                    NIGERIA'S BLOCKCHAIN EMR INFRASTRUCTURE
+                </span>
+            </div>
 
             {/* Welcome Banner */}
             <motion.div

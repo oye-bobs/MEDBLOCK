@@ -10,9 +10,9 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
-    X,
-    Stethoscope
+    X
 } from 'lucide-react'
+import logo from '../assets/navbar-logo.png';
 import { motion, AnimatePresence } from 'framer-motion'
 import { useContext } from 'react'
 import { AuthContext } from '../App'
@@ -65,8 +65,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, o
                         className="flex flex-col"
                     >
                         <div className="flex items-center gap-2">
-                            <Stethoscope className="text-blue-600" size={24} />
-                            <h1 className="text-xl font-bold text-blue-600">MEDBLOCK</h1>
+                            <img src={logo} alt="MEDBLOCK" className="h-8 w-auto" />
                         </div>
                         <p className="text-[10px] text-gray-500 tracking-wider ml-8">PROVIDER PORTAL</p>
                     </motion.div>

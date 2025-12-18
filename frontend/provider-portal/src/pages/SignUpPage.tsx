@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../App';
-import BackgroundLayer from '../components/BackgroundLayer';
-import { Shield, User, Mail, Lock, Building, Stethoscope, ArrowLeft, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { PORTAL_URLS } from '@medblock/shared';
+import { Shield, User, Mail, Lock, Building, ArrowLeft, ArrowRight, Loader2, Eye, EyeOff , Stethoscope} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { requestProviderOtp } from '../services/api';
 import Swal from 'sweetalert2';
+import BackgroundLayer from '@/components/BackgroundLayer';
 
 const SignUpPage: React.FC = () => {
     const navigate = useNavigate();
@@ -382,7 +383,7 @@ const SignUpPage: React.FC = () => {
                 </AnimatePresence>
 
                 <div className="mt-8 text-center">
-                    <a href="http://localhost:3000/user-selection" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
+                    <a href={`${PORTAL_URLS.PATIENT}/user-selection`} className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
                         <ArrowLeft size={16} /> Back to Role Selection
                     </a>
                 </div>

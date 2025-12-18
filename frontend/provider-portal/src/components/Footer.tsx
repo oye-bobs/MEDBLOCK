@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logo from '../assets/navbar-logo.png';
 
 const Footer: React.FC = () => {
     const currentYear = new Date().getFullYear();
@@ -70,9 +71,7 @@ const Footer: React.FC = () => {
                     {/* Brand & Description */}
                     <div className="lg:col-span-2">
                         <div className="flex items-center space-x-2 mb-4">
-                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">MB</span>
-                            </div>
+                            <img src={logo} alt="MEDBLOCK" className="h-8 w-auto" />
                             <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
                                 MEDBLOCK
                             </h2>

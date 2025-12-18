@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
+import logo from '../assets/favicon.png';
 
 const Navbar: React.FC = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const navigate = useNavigate();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -35,27 +33,12 @@ const Navbar: React.FC = () => {
     ];
 
     const handleAuthAction = (action: 'login' | 'register') => {
-        // Since we are already in Provider Portal, we can just navigate or offer to switch to Patient
-        Swal.fire({
-            title: action === 'login' ? 'Login as...' : 'Join as...',
-            text: 'Please select your user type',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Provider',
-            cancelButtonText: 'Patient',
-            confirmButtonColor: '#007BFF',
-            cancelButtonColor: '#28a745',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Provider
-                navigate(action === 'login' ? '/login' : '/signup');
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                // Patient - Redirect to Patient Portal
-                // Assuming Patient Portal is on port 5173
-                window.location.href = `http://localhost:5173/${action === 'login' ? 'login' : 'register'}`;
-            }
-        });
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const PRODUCTION_PATIENT_URL = (import.meta as any).env?.VITE_PATIENT_PORTAL_URL || 'https://medblock-app.web.app';
+        const PATIENT_BASE_URL = isLocal ? 'http://localhost:3000' : PRODUCTION_PATIENT_URL;
+
+        // Redirect to UserSelection page in Patient Portal
+        window.location.href = `${PATIENT_BASE_URL}/user-selection?mode=${action}`;
     };
 
     return (
@@ -68,17 +51,19 @@ const Navbar: React.FC = () => {
             >
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center">
-                        {/* Branding */}
                         <div
                             className="flex items-center cursor-pointer"
                             onClick={() => scrollToSection('home')}
                         >
                             <div className="flex flex-col">
-                                <h1 className="text-2xl font-bold text-blue-600">
-                                    MEDBLOCK
-                                </h1>
+                                <div className="flex items-center">
+                                    <h1 className="text-2xl font-bold text-[#20305B]">
+                                        MEDBLOCK
+                                    </h1>
+                                    <img src={logo} alt="MEDBLOCK" className="h-20 w-20" />
+                                </div>
                                 <span className="hidden lg:block text-[10px] text-gray-500 font-medium tracking-wider">
-                                    PROVIDER PORTAL
+                                    NIGERIA'S BLOCKCHAIN EMR INFRASTRUCTURE
                                 </span>
                             </div>
                         </div>

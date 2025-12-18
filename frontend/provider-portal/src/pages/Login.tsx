@@ -3,10 +3,12 @@ import { useNavigate, Link } from 'react-router-dom'
 import { AuthContext } from '../App'
 import { PORTAL_URLS } from '@medblock/shared'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, Lock, Stethoscope, ArrowLeft, Eye, EyeOff, Zap, Shield, CheckCircle, Clock, User, Building } from 'lucide-react'
+import { Mail, Lock, ArrowLeft, Eye, EyeOff, Zap, Shield, CheckCircle, Clock, User, Building } from 'lucide-react'
+import favicon from '../assets/favicon.png'
 import BackgroundLayer from '@/components/BackgroundLayer'
 import { apiService } from '../services/api'
 import Swal from 'sweetalert2'
+import { getRecentProviders, addRecentProvider } from '../utils/storage'
 
 export default function Login() {
     const { login } = useContext(AuthContext)
@@ -21,20 +23,14 @@ export default function Login() {
 
     // Fetch recent providers on mount
     useEffect(() => {
-        fetchRecentProviders()
+        loadRecentProviders()
     }, [])
 
-    const fetchRecentProviders = async () => {
-        try {
-            setLoadingRecent(true)
-            const response = await apiService.getRecentProviders()
-            setRecentProviders(response.slice(0, 3)) // Show only last 3
-        } catch (error) {
-            console.error('Failed to fetch recent providers:', error)
-            setRecentProviders([])
-        } finally {
-            setLoadingRecent(false)
-        }
+    const loadRecentProviders = () => {
+        setLoadingRecent(true)
+        const providers = getRecentProviders()
+        setRecentProviders(providers)
+        setLoadingRecent(false)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -54,8 +50,16 @@ export default function Login() {
 
             Swal.close()
 
-            // Login with name and DID
-            login(response.name || formData.email, response.did)
+            // Save to recent providers (device specific)
+            addRecentProvider({
+                name: response.name || formData.email,
+                email: formData.email,
+                did: response.did,
+                hospitalName: response.hospitalName
+            })
+
+            // Login with name, DID and token
+            login(response.name || formData.email, response.did, response.accessToken)
 
             // Success message
             await Swal.fire({
@@ -143,7 +147,7 @@ export default function Login() {
                             className="flex items-center justify-center mb-4"
                         >
                             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
-                                <Stethoscope size={32} className="text-white" />
+                                <img src={favicon} alt="MEDBLOCK" className="w-8 h-8" />
                             </div>
                         </motion.div>
                         <h1 className="text-4xl font-bold text-gray-900 mb-2">MEDBLOCK</h1>
@@ -205,6 +209,11 @@ export default function Login() {
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
+                                </div>
+                                <div className="flex justify-end mt-1">
+                                    <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">
+                                        Forgot Password?
+                                    </Link>
                                 </div>
                             </div>
 
@@ -268,7 +277,7 @@ export default function Login() {
                                 <h3 className="font-bold text-gray-900">Recent Signups</h3>
                             </div>
                             <button
-                                onClick={fetchRecentProviders}
+                                onClick={loadRecentProviders}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Refresh"
                             >
@@ -292,7 +301,7 @@ export default function Login() {
                                 <AnimatePresence>
                                     {recentProviders.map((provider, index) => (
                                         <motion.button
-                                            key={provider.id}
+                                            key={`${provider.email}-${provider.did || index}`}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             exit={{ opacity: 0, x: 20 }}

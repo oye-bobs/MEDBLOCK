@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { verifyOtpAndCreateProvider } from '../services/api';
+import { Mail, ShieldCheck, RefreshCcw, ArrowLeft } from 'lucide-react';
 import BackgroundLayer from '@/components/BackgroundLayer';
-import { Mail, ShieldCheck, Timer, RefreshCcw, ArrowLeft } from 'lucide-react';
+import { AuthContext } from '../App';
+import { addRecentProvider } from '../utils/storage';
 
 interface LocationState {
     email: string;
@@ -13,6 +15,7 @@ interface LocationState {
 const OtpVerification: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { login } = useContext(AuthContext);
     const { email, registrationData, devOtp } = (location.state as LocationState) || {};
 
     const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
@@ -109,11 +112,16 @@ const OtpVerification: React.FC = () => {
         try {
             const result = await verifyOtpAndCreateProvider(email, code);
             
-            // Store credentials
-            localStorage.setItem('did', result.did);
-            localStorage.setItem('accessToken', result.accessToken || '');
-            localStorage.setItem('userRole', 'provider');
-            localStorage.setItem('userName', result.name || email);
+            // Store credentials locally via AuthContext
+            login(result.name || email, result.did, result.accessToken);
+            
+            // Add to recent providers (device specific)
+            addRecentProvider({
+                name: result.name || email,
+                email: email,
+                did: result.did,
+                hospitalName: registrationData?.hospitalName || result.hospitalName
+            });
 
             // Navigate to dashboard
             navigate('/dashboard', { replace: true });
@@ -204,23 +212,27 @@ const OtpVerification: React.FC = () => {
                         {loading ? 'Verifying...' : 'Verify & Continue'}
                     </button>
 
-                    <div className="flex items-center justify-between mt-6">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Timer className="w-4 h-4 text-gray-500" />
-                            {timeLeft > 0 ? (
-                                <span>Code expires in {formatTime(timeLeft)}</span>
-                            ) : (
-                                <span className="text-amber-700">Code expired</span>
-                            )}
-                        </div>
-
+                    <div className="text-center mt-6">
+                        <p className="text-gray-600 mb-4">
+                            Didn't receive the code?
+                        </p>
                         <button
                             onClick={handleResend}
-                            disabled={resending || timeLeft > 0}
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                            disabled={timeLeft > 0 || resending}
+                            className={`flex items-center justify-center space-x-2 mx-auto ${
+                                timeLeft > 0 || resending
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-blue-600 hover:text-blue-700'
+                            }`}
                         >
-                            <RefreshCcw className="w-4 h-4" />
-                            {resending ? 'Sending...' : 'Resend Code'}
+                            <RefreshCcw className={`w-4 h-4 ${resending ? 'animate-spin' : ''}`} />
+                            <span>
+                                {resending
+                                    ? 'Resending...'
+                                    : timeLeft > 0
+                                    ? `Resend in ${formatTime(timeLeft)}`
+                                    : 'Resend Code'}
+                            </span>
                         </button>
                     </div>
 

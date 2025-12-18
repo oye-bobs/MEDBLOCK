@@ -8,11 +8,11 @@ import Consent from './pages/Consent'
 import AccessLog from './pages/AccessLog'
 import Profile from './pages/Profile'
 import { useAuth, AuthProvider } from './hooks/useAuth'
-import BackgroundLayer from './components/BackgroundLayer'
 import LoginPage from './pages/LoginPage'
 import LandingPage from './pages/LandingPage'
 import UserSelection from './pages/UserSelection'
 import AuthorizedProviders from './pages/AuthorizedProviders'
+import NotFound from './pages/NotFound'
 import { NotificationProvider } from './context/NotificationContext'
 
 const queryClient = new QueryClient()
@@ -46,6 +46,7 @@ function AppRoutes() {
                 <Route path="access-log" element={<AccessLog />} />
                 <Route path="profile" element={<Profile />} />
             </Route>
+            <Route path="*" element={<NotFound />} />
         </Routes>
     )
 }
@@ -55,7 +56,6 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
             <NotificationProvider>
                 <AuthProvider>
-                    <BackgroundLayer />
                     <AppRoutes />
                 </AuthProvider>
             </NotificationProvider>

@@ -204,6 +204,21 @@ class ApiService {
         const response = await this.client.get('/consent/active')
         return response.data
     }
+
+    resendProviderOtp = async (data: any) => {
+        const response = await this.client.post('/identity/practitioner/resend-otp', data)
+        return response.data
+    }
+
+    requestPasswordReset = async (email: string) => {
+        const response = await this.client.post('/identity/practitioner/forgot-password', { email })
+        return response.data
+    }
+
+    resetPassword = async (data: { email: string; otp: string; newPassword: string }) => {
+        const response = await this.client.post('/identity/practitioner/reset-password', data)
+        return response.data
+    }
 }
 
 
@@ -219,6 +234,19 @@ export const requestProviderOtp = (data: {
     licenseNumber?: string
     password: string
 }) => apiService.requestProviderOtp(data)
+
+export const resendProviderOtp = (data: {
+    fullName: string
+    email: string
+    hospitalName: string
+    hospitalType: string
+    specialty: string
+    licenseNumber?: string
+    password: string
+}) => apiService.resendProviderOtp(data)
+
+export const requestPasswordReset = (email: string) => apiService.requestPasswordReset(email)
+export const resetPassword = (data: { email: string; otp: string; newPassword: string }) => apiService.resetPassword(data)
 
 export const verifyOtpAndCreateProvider = (email: string, otp: string) =>
     apiService.verifyOtpAndCreateProvider(email, otp)

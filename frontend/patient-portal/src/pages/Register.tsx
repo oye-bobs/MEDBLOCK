@@ -12,6 +12,8 @@ import {
     Loader2,
     AlertTriangle
 } from 'lucide-react'
+import favicon from '../assets/favicon.png'
+import BackgroundLayer from '../components/BackgroundLayer'
 
 const Loader = () => (
     <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto" />
@@ -229,13 +231,8 @@ export default function Register() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 relative overflow-hidden bg-gray-50">
-            {/* Background Blobs */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-                <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
-            </div>
+        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 relative overflow-hidden">
+            <BackgroundLayer />
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -251,7 +248,7 @@ export default function Register() {
                         transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
                         className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg mb-4"
                     >
-                        <Shield className="text-white" size={32} />
+                        <img src={favicon} alt="MEDBLOCK" className="w-8 h-8" />
                     </motion.div>
                     <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Create Your Account</h1>
                     <p className="text-gray-600 font-medium">Secure, Decentralized, and Patient-First</p>

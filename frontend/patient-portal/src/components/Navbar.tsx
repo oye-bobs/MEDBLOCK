@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from '../../../shared/favicon.png';
 
 const Navbar: React.FC = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -58,9 +59,13 @@ const Navbar: React.FC = () => {
                             onClick={() => scrollToSection('home')}
                         >
                             <div className="flex flex-col">
-                                <h1 className="text-2xl font-bold text-blue-600">
+                                <div className='flex items-center'> 
+                                    <h1 className="text-2xl font-bold text-[#20305B]">
                                     MEDBLOCK
                                 </h1>
+
+                                <img src={logo} alt="MEDBLOCK" className=" h-20 w-20" /></div>
+                                
                                 <span className="hidden lg:block text-[10px] text-gray-500 font-medium tracking-wider">
                                     NIGERIA'S BLOCKCHAIN EMR INFRASTRUCTURE
                                 </span>

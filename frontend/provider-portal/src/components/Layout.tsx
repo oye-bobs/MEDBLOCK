@@ -2,8 +2,8 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from '../App'
 import Sidebar from './Sidebar'
-import { Menu, Stethoscope } from 'lucide-react'
 import BackgroundLayer from './BackgroundLayer'
+import { Menu, Stethoscope } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 
 export default function Layout() {

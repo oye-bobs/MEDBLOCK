@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { User, Stethoscope, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+// import logo from '../../../shared/favicon.png'
+// import BackgroundLayer from '../components/BackgroundLayer'
 
 const UserSelection: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -9,9 +11,14 @@ const UserSelection: React.FC = () => {
     const isLogin = mode === 'login';
 
     const patientLink = isLogin ? '/login' : '/register';
-    // Provider portal links - assuming port 3001
+    // Provider portal links
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const PROVIDER_BASE_URL = isLocal ? 'http://localhost:3001' : 'https://medblock-app-provider.web.app';
+    
+    // Use the environment variable for production URL if available, otherwise fallback to localhost
+    // If we are in production (not local), we want to use the VITE_PROVIDER_PORTAL_URL from env or the hardcoded production url
+    const PRODUCTION_PROVIDER_URL = (import.meta as any).env?.VITE_PROVIDER_PORTAL_URL || 'https://medblock-app-provider.web.app';
+    const PROVIDER_BASE_URL = isLocal ? 'http://localhost:3001' : PRODUCTION_PROVIDER_URL;
+    
     const providerLink = isLogin ? `${PROVIDER_BASE_URL}/login` : `${PROVIDER_BASE_URL}/signup`;
 
     const actionText = isLogin ? 'Sign in' : 'Join';

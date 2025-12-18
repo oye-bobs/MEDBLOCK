@@ -1,10 +1,92 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
-import BackgroundLayer from '../components/BackgroundLayer';
+import BackgroundLayer from '@/components/BackgroundLayer';
 import Footer from '../components/Footer';
+import {
+    FileText,
+    Shield,
+    RefreshCw,
+    TestTube,
+    TrendingDown,
+    AlertTriangle,
+    CheckCircle,
+    Database,
+    UserCheck,
+    Zap,
+    Eye,
+    Building,
+    Microscope,
+    Landmark,
+    Stethoscope,
+    Lock,
+    Cpu,
+    Fingerprint,
+    Target,
+    ArrowRight
+} from 'lucide-react';
 
 const LandingPage: React.FC = () => {
+    // Default to 'Hospitals' for Provider Portal
+    const [activeTab, setActiveTab] = useState('Hospitals');
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        setIsVisible(true);
+    }, []);
+
+    const features = {
+        Hospitals: [
+            'Instant access to complete patient medical history',
+            'Eliminate repeated diagnostic tests and procedures',
+            'Seamless cross-hospital patient transfers',
+            'Accelerated insurance claim processing'
+        ],
+        Patients: [
+            'Own your medical data with self-sovereign identity',
+            'Grant time-bound access to healthcare providers',
+            'View complete audit trail of record access',
+            'Access medical history anywhere, anytime'
+        ],
+        HMOs: [
+            'Blockchain-verified claims eliminate fraud',
+            'Automated claim processing in under 5 minutes',
+            'Drastically reduced administrative overhead',
+            'Complete, verifiable treatment history'
+        ],
+        Labs: [
+            'Instant test result delivery to patients and doctors',
+            'Blockchain-verified authenticity of lab results',
+            'Prevent duplicate testing across providers',
+            'Direct integration with patient EMR systems'
+        ],
+        Government: [
+            'Real-time national disease surveillance',
+            'Verified, tamper-proof healthcare data',
+            'Evidence-based policy and budget planning',
+            'Optimized healthcare resource allocation'
+        ]
+    };
+
+    const problemStats = [
+        { icon: FileText, text: '85% of medical records are paper-based or siloed', color: 'text-blue-600' },
+        { icon: Shield, text: 'Billions lost annually to fraudulent HMO claims', color: 'text-red-600' },
+        { icon: RefreshCw, text: 'No nationwide data exchange between providers', color: 'text-purple-600' },
+        { icon: TestTube, text: 'Repeated diagnostics waste resources and delay treatment', color: 'text-green-600' },
+        { icon: TrendingDown, text: 'No real-time disease surveillance for NCDC & government', color: 'text-orange-600' },
+        { icon: AlertTriangle, text: 'Inefficient healthcare delivery and preventable deaths', color: 'text-amber-600' }
+    ];
+
+    const FadeInSection: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+        <div
+            className={`transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+                }`}
+            style={{ transitionDelay: `${delay}ms` }}
+        >
+            {children}
+        </div>
+    );
+
     return (
         <div className="relative min-h-screen font-sans text-gray-900 antialiased">
             <BackgroundLayer />
@@ -15,23 +97,234 @@ const LandingPage: React.FC = () => {
                 <HeroSection />
             </section>
 
-            {/* Features Section - Placeholder for now or reused from Hero */}
-            <section id="features" className="py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-bold mb-8">Why Choose MEDBLOCK for your Practice?</h2>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                            <h3 className="text-xl font-semibold mb-4 text-blue-600">Streamlined Workflow</h3>
-                            <p className="text-gray-600">Reduce administrative burden with automated claims and instant record access.</p>
+            {/* Problem Section */}
+            <section id="problem" className="py-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeInSection>
+                        <div className="text-center mb-16">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-full text-sm font-medium mb-6 border border-red-100">
+                                <AlertTriangle size={16} />
+                                The Challenge
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">🇳🇬 The Nigerian Healthcare Problem</h2>
+                            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                                Fragmented systems, inefficient processes, and data silos are costing lives and resources across Nigeria's healthcare ecosystem.
+                            </p>
                         </div>
-                        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                            <h3 className="text-xl font-semibold mb-4 text-blue-600">Secure & Compliant</h3>
-                            <p className="text-gray-600">Built on Cardano blockchain ensuring data integrity and patient privacy.</p>
+                    </FadeInSection>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {problemStats.map((item, idx) => (
+                            <FadeInSection key={idx} delay={idx * 100}>
+                                <div className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex items-start space-x-4">
+                                    <div className={`p-3 rounded-xl bg-gray-50 ${item.color} group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                                        <item.icon size={24} />
+                                    </div>
+                                    <p className="text-gray-700 font-medium leading-relaxed">{item.text}</p>
+                                </div>
+                            </FadeInSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Solution Section */}
+            <section id="solution" className="py-20 ">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeInSection>
+                        <div className="text-center mb-16">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium mb-6 border border-green-100">
+                                <CheckCircle size={16} />
+                                Our Solution
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">💡 The MEDBLOCK Solution</h2>
+                            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                                A unified, blockchain-secured electronic medical record system built for Nigeria.
+                            </p>
                         </div>
-                        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-                            <h3 className="text-xl font-semibold mb-4 text-blue-600">Interoperable</h3>
-                            <p className="text-gray-600">Seamlessly exchange data with other providers and labs via FHIR standards.</p>
+                    </FadeInSection>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
+                        {[
+                            { title: 'Eliminates Fraud', desc: 'Blockchain fingerprints ensure data integrity', icon: Shield },
+                            { title: 'Interoperability', desc: 'FHIR-compliant for universal data exchange', icon: RefreshCw },
+                            { title: 'Patient Power', desc: 'Self-sovereign identity puts you in control', icon: UserCheck },
+                            { title: 'Fast Claims', desc: 'Automates HMO claims in <5 minutes', icon: Zap },
+                            { title: 'Real-time Insights', desc: 'Instant data for government planning', icon: Eye }
+                        ].map((item, idx) => (
+                            <FadeInSection key={idx} delay={idx * 100}>
+                                <div className="group bg-white p-5 rounded-xl border border-gray-200 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                        <item.icon size={20} />
+                                    </div>
+                                    <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                                </div>
+                            </FadeInSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Architecture Section */}
+            <section id="architecture" className="py-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeInSection>
+                        <div className="text-center mb-16">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-full text-sm font-medium mb-6 border border-purple-100">
+                                <Database size={16} />
+                                Technology Stack
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">🏗️ System Architecture</h2>
+                            <p className="text-xl text-gray-600">Hybrid On-chain / Off-chain Model for Optimal Performance</p>
                         </div>
+                    </FadeInSection>
+
+                    <div className="max-w-4xl mx-auto space-y-3">
+                        {[
+                            { layer: 'Frontend', tech: 'React + TypeScript', desc: 'Patient & Provider Portals', icon: Cpu },
+                            { layer: 'Standard', tech: 'FHIR R4', desc: 'Interoperability Layer', icon: RefreshCw },
+                            { layer: 'Backend', tech: 'Django + PyCardano', desc: 'API Logic & Orchestration', icon: Database },
+                            { layer: 'Identity', tech: 'Atala PRISM', desc: 'Decentralized Identifiers (DIDs)', icon: Fingerprint },
+                            { layer: 'Smart Contracts', tech: 'Plutus + Marlowe', desc: 'Consent Management & Claims', icon: FileText },
+                            { layer: 'Blockchain', tech: 'Cardano', desc: 'Immutable Ledger, Hashes, Audit Trail', icon: Shield },
+                            { layer: 'Database', tech: 'PostgreSQL', desc: 'Encrypted Off-chain Records', icon: Lock }
+                        ].map((item, idx) => (
+                            <FadeInSection key={idx} delay={idx * 50}>
+                                <div className="group flex flex-col md:flex-row items-center bg-white p-5 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+                                    <div className="w-full md:w-1/4 font-semibold text-gray-900 flex items-center gap-3 mb-2 md:mb-0">
+                                        <div className="p-2 bg-blue-50 rounded-lg">
+                                            <item.icon size={16} className="text-blue-600" />
+                                        </div>
+                                        {item.layer}
+                                    </div>
+                                    <div className="hidden md:block text-gray-300 mx-4 group-hover:text-blue-400 transition-colors">
+                                        <ArrowRight size={16} />
+                                    </div>
+                                    <div className="w-full md:w-1/4 text-blue-600 font-medium text-sm bg-blue-50 px-3 py-1 rounded-md text-center md:text-left mb-2 md:mb-0">
+                                        {item.tech}
+                                    </div>
+                                    <div className="w-full md:w-1/2 text-gray-600 text-sm md:pl-4">{item.desc}</div>
+                                </div>
+                            </FadeInSection>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Key Features Section */}
+            <section id="features" className="py-20 ">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeInSection>
+                        <div className="text-center mb-12">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-full text-sm font-medium mb-6 border border-orange-100">
+                                <Target size={16} />
+                                Key Features
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Tailored for Every Stakeholder</h2>
+                            <p className="text-xl text-gray-600">Comprehensive solutions designed for each participant in the healthcare ecosystem.</p>
+                        </div>
+                    </FadeInSection>
+
+                    {/* Tabs */}
+                    <FadeInSection delay={200}>
+                        <div className="flex flex-wrap justify-center gap-2 mb-12">
+                            {Object.keys(features).map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`group px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === tab
+                                        ? 'bg-blue-600 text-white shadow-md scale-105'
+                                        : 'bg-white text-gray-600 hover:bg-gray-100 hover:scale-105 border border-gray-200'
+                                        }`}
+                                >
+                                    {tab === 'Patients' && <UserCheck size={16} />}
+                                    {tab === 'Hospitals' && <Building size={16} />}
+                                    {tab === 'HMOs' && <Landmark size={16} />}
+                                    {tab === 'Labs' && <Microscope size={16} />}
+                                    {tab === 'Government' && <Shield size={16} />}
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+                    </FadeInSection>
+
+                    {/* Content */}
+                    <FadeInSection delay={300}>
+                        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm max-w-6xl mx-auto min-h-[400px] flex items-center justify-center">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full">
+                                <div className="flex flex-col justify-center">
+                                    <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                                        {activeTab === 'Patients' && <UserCheck className="text-blue-600" />}
+                                        {activeTab === 'Hospitals' && <Building className="text-blue-600" />}
+                                        {activeTab === 'HMOs' && <Landmark className="text-blue-600" />}
+                                        {activeTab === 'Labs' && <Microscope className="text-blue-600" />}
+                                        {activeTab === 'Government' && <Shield className="text-blue-600" />}
+                                        Benefits for {activeTab}
+                                    </h3>
+                                    <ul className="space-y-3">
+                                        {features[activeTab as keyof typeof features].map((feature, idx) => (
+                                            <li key={idx} className="flex items-start text-gray-700 group">
+                                                <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3 text-xs mt-0.5 group-hover:scale-110 transition-transform flex-shrink-0">✓</span>
+                                                <span className="leading-relaxed">{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="hidden lg:flex items-center justify-center">
+                                    <div className="text-center bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                        <div className="text-6xl mb-4">
+                                            {activeTab === 'Patients' && '👤'}
+                                            {activeTab === 'Hospitals' && '🏥'}
+                                            {activeTab === 'HMOs' && '🏢'}
+                                            {activeTab === 'Labs' && '🔬'}
+                                            {activeTab === 'Government' && '🏛️'}
+                                        </div>
+                                        <div className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">
+                                            MEDBLOCK for {activeTab}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </FadeInSection>
+                </div>
+            </section>
+
+            {/* Use Cases Section */}
+            <section id="use-cases" className="py-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeInSection>
+                        <div className="text-center mb-16">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium mb-6 border border-green-100">
+                                <Zap size={16} />
+                                Real World Impact
+                            </div>
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Use Cases & Impact</h2>
+                            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                                Real-world scenarios where MEDBLOCK saves lives, reduces costs, and transforms healthcare delivery.
+                            </p>
+                        </div>
+                    </FadeInSection>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[
+                            { title: 'Emergency Room', icon: Cpu, desc: 'Instant access to allergies and medications saves lives in critical moments' },
+                            { title: 'Cross-Hospital Transfer', icon: Building, desc: 'Complete medical history travels with the patient. No repeated tests' },
+                            { title: 'HMO Fraud Prevention', icon: Shield, desc: 'Blockchain verification rejects fraudulent claims automatically' },
+                            { title: 'Disease Surveillance', icon: Eye, desc: 'Real-time, anonymized data helps NCDC detect outbreaks early' },
+                            { title: 'Telemedicine', icon: Stethoscope, desc: 'Rural patients get specialist consultations with verified history' }
+                        ].map((item, idx) => (
+                            <FadeInSection key={idx} delay={idx * 100}>
+                                <div className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-4">
+                                        <item.icon size={24} />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+                                    <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
+                                </div>
+                            </FadeInSection>
+                        ))}
                     </div>
                 </div>
             </section>

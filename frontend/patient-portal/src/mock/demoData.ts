@@ -38,6 +38,10 @@ let observations = [
   }
 ]
 
+
+
+
+
 let consents: any[] = []
 
 function createPatientDID(data: any) {
@@ -142,4 +146,5 @@ export default {
   revokeConsent,
   getActiveConsents,
   getAccessLog,
+
 }

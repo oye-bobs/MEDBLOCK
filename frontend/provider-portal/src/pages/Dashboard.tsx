@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../App'
 import { apiService } from '../services/api'
+import favicon from '../assets/favicon.png'
 import {
     Users,
     FileText,
@@ -138,6 +139,15 @@ export default function Dashboard() {
             animate="visible"
             className="space-y-6"
         >
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-[#20305B]">MEDBLOCK</h1>
+                    <img src={favicon} alt="MEDBLOCK" className="h-12 w-12" />
+                </div>
+                <span className="hidden md:block text-xs text-gray-500 font-medium tracking-wider">
+                    NIGERIA'S BLOCKCHAIN EMR INFRASTRUCTURE
+                </span>
+            </div>
             {/* Welcome Section */}
             <motion.div
                 variants={itemVariants}

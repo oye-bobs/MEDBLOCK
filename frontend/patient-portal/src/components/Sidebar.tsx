@@ -15,6 +15,7 @@ import {
     X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import logo from '../assets/navbar-logo.png'
 
 interface SidebarProps {
     isCollapsed: boolean
@@ -64,7 +65,7 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, o
                         exit={{ opacity: 0 }}
                         className="flex flex-col"
                     >
-                        <h1 className="text-xl font-bold text-blue-600">MEDBLOCK</h1>
+                        <img src={logo} alt="MEDBLOCK" className="h-8 w-auto mb-1" />
                         <p className="text-[10px] text-gray-500 tracking-wider">PATIENT PORTAL</p>
                     </motion.div>
                 )}
