@@ -5,7 +5,6 @@ import { format } from 'date-fns'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Calendar, Activity, Shield, Search, Filter } from 'lucide-react'
-import BackgroundLayer from '../components/BackgroundLayer'
 import RecordDetailsModal from '../components/RecordDetailsModal'
 
 export default function Records() {
@@ -61,9 +60,8 @@ export default function Records() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-6 relative"
+            className="space-y-8 relative"
         >
-            <BackgroundLayer />
 
             {/* Header */}
             <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Plus, AlertTriangle, Calendar, Clock, CheckCircle, X, FileText, Lock, QrCode } from 'lucide-react'
-import BackgroundLayer from '../components/BackgroundLayer'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 
 export default function Consent() {
@@ -155,9 +154,8 @@ export default function Consent() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-6 relative min-h-screen p-4 sm:p-6 lg:p-8 bg-gray-50"
+            className="space-y-8 relative"
         >
-            <BackgroundLayer />
 
             {/* Header */}
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

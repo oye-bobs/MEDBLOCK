@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { Shield, FileText, Clock, Activity, Search, Filter, Download, Eye, X, User, MapPin, Hash, Calendar } from 'lucide-react'
-import BackgroundLayer from '../components/BackgroundLayer'
 import { useQuery } from '@tanstack/react-query'
 import { apiService } from '../services/api'
 import { format } from 'date-fns'
@@ -96,9 +95,8 @@ export default function AccessLog() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-6 relative"
+            className="space-y-8 relative"
         >
-            <BackgroundLayer />
 
             {/* Header */}
             <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">

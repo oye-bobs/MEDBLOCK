@@ -10,12 +10,11 @@ import {
     User,
     LogOut,
     ChevronLeft,
-    ChevronRight,
     Wallet,
     X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import logo from '../assets/navbar-logo.png'
+import logo from '../../../shared/favicon.png'
 
 interface SidebarProps {
     isCollapsed: boolean
@@ -57,32 +56,41 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, o
     const sidebarContent = (
         <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
-                {(!isCollapsed || isMobile) && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex flex-col"
+            <div className="h-20 flex items-center justify-between px-4 border-b border-gray-100">
+                <div className="flex items-center overflow-hidden">
+                    <div 
+                        className="flex items-center cursor-pointer min-w-max"
+                        onClick={() => navigate('/dashboard')}
                     >
-                        <img src={logo} alt="MEDBLOCK" className="h-8 w-auto mb-1" />
-                        <p className="text-[10px] text-gray-500 tracking-wider">PATIENT PORTAL</p>
-                    </motion.div>
-                )}
+                        <div className="p-1.5 bg-blue-50 rounded-xl mr-3 shadow-sm border border-blue-100/50">
+                            <img src={logo} alt="MEDBLOCK" className="h-8 w-8 object-contain" />
+                        </div>
+                        
+                        {(!isCollapsed || isMobile) && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="flex flex-col"
+                            >
+                                <h1 className="text-lg font-bold text-[#20305B] leading-none">
+                                    MEDBLOCK
+                                </h1>
+                                <span className="text-[10px] text-blue-600 font-bold tracking-tight mt-0.5">
+                                    PATIENT PORTAL
+                                </span>
+                            </motion.div>
+                        )}
+                    </div>
+                </div>
 
-                {isMobile ? (
+                {isMobile && (
                     <button
                         onClick={onMobileClose}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                        className="ml-auto p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors"
                     >
                         <X size={20} />
-                    </button>
-                ) : (
-                    <button
-                        onClick={onToggle}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                    >
-                        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
                     </button>
                 )}
             </div>
@@ -165,6 +173,19 @@ export default function Sidebar({ isCollapsed, onToggle, isMobileOpen = false, o
                 className="hidden md:flex h-screen bg-white border-r border-gray-200 fixed left-0 top-0 z-50 flex-col shadow-lg"
             >
                 {sidebarContent}
+                
+                {/* Desktop Toggle Button - Centered on border */}
+                <button
+                    onClick={onToggle}
+                    className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:shadow-lg transition-all duration-300 z-[60] group"
+                >
+                    <motion.div
+                        animate={{ rotate: isCollapsed ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ChevronLeft size={14} className="group-hover:scale-110 transition-transform" />
+                    </motion.div>
+                </button>
             </motion.div>
 
             {/* Mobile Sidebar Overlay */}

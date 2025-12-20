@@ -55,18 +55,17 @@ const Navbar: React.FC = () => {
                     <div className="flex justify-between items-center">
                         {/* Branding */}
                         <div
-                            className="flex items-center cursor-pointer"
+                            className="flex items-center cursor-pointer group"
                             onClick={() => scrollToSection('home')}
                         >
+                            <div className="p-1.5 bg-blue-50/50 rounded-xl mr-3 border border-blue-100/50 group-hover:bg-blue-50 transition-colors">
+                                <img src={logo} alt="MEDBLOCK" className="h-10 w-10 object-contain" />
+                            </div>
                             <div className="flex flex-col">
-                                <div className='flex items-center'> 
-                                    <h1 className="text-2xl font-bold text-[#20305B]">
+                                <h1 className="text-2xl font-bold text-[#20305B] leading-none">
                                     MEDBLOCK
                                 </h1>
-
-                                <img src={logo} alt="MEDBLOCK" className=" h-20 w-20" /></div>
-                                
-                                <span className="hidden lg:block text-[10px] text-gray-500 font-medium tracking-wider">
+                                <span className="hidden lg:block text-[10px] text-gray-500 font-bold tracking-tight mt-1">
                                     NIGERIA'S BLOCKCHAIN EMR INFRASTRUCTURE
                                 </span>
                             </div>

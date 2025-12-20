@@ -188,7 +188,7 @@ export default function CreateRecord() {
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen bg-gray-50/50"
+            className="w-full"
         >
             {/* Header */}
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">

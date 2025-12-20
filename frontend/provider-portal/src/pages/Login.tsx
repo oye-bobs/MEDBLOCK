@@ -4,7 +4,7 @@ import { AuthContext } from '../App'
 import { PORTAL_URLS } from '@medblock/shared'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Lock, ArrowLeft, Eye, EyeOff, Zap, Shield, CheckCircle, Clock, User, Building } from 'lucide-react'
-import favicon from '../assets/favicon.png'
+import favicon from '../../../shared/favicon.png'
 import BackgroundLayer from '@/components/BackgroundLayer'
 import { apiService } from '../services/api'
 import Swal from 'sweetalert2'
@@ -126,6 +126,18 @@ export default function Login() {
         })
     }
 
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                delayChildren: 0.3,
+                staggerChildren: 0.2
+            }
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -141,8 +153,9 @@ export default function Login() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
                             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
                             className="flex items-center justify-center mb-4"
                         >

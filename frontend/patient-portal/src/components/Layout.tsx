@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Sidebar from './Sidebar'
 import { Menu } from 'lucide-react'
 import NotificationBell from './NotificationBell'
+import BackgroundLayer from './BackgroundLayer'
 
 export default function Layout() {
     const { isAuthenticated } = useAuth()
@@ -18,7 +19,8 @@ export default function Layout() {
     }, [isAuthenticated, navigate])
 
     return (
-        <div className="min-h-screen flex bg-gray-50">
+        <div className="min-h-screen flex">
+            <BackgroundLayer />
             <Sidebar
                 isCollapsed={isCollapsed}
                 onToggle={() => setIsCollapsed(!isCollapsed)}

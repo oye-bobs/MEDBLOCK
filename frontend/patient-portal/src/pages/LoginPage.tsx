@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   AlertTriangle
 } from 'lucide-react'
-import favicon from '../assets/favicon.png'
+import favicon from '../../../shared/favicon.png'
 import BackgroundLayer from '../components/BackgroundLayer'
 
 const Loader = () => (

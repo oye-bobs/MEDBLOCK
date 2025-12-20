@@ -85,7 +85,7 @@ export default function Profile() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="max-w-4xl mx-auto space-y-6 print:hidden"
+                className="max-w-4xl mx-auto space-y-8 print:hidden"
             >
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900">Provider Settings</h1>

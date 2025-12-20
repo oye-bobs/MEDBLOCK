@@ -87,7 +87,7 @@ export default function PatientSearch() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="space-y-6"
+            className="space-y-8"
         >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

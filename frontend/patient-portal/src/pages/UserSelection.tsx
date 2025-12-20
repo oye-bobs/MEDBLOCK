@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { User, Stethoscope, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
+import { User, Stethoscope, ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
-// import logo from '../../../shared/favicon.png'
-// import BackgroundLayer from '../components/BackgroundLayer'
+import favicon from '../../../shared/favicon.png'
+import BackgroundLayer from '../components/BackgroundLayer'
 
 const UserSelection: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -26,13 +26,8 @@ const UserSelection: React.FC = () => {
     const providerActionText = isLogin ? 'Enter Provider Portal' : 'Create Provider Account';
 
     return (
-        <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-50">
-            {/* Background Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-                <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
-            </div>
+        <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+            <BackgroundLayer />
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div className="text-center mb-12">
@@ -42,7 +37,7 @@ const UserSelection: React.FC = () => {
                         transition={{ duration: 0.5 }}
                         className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg mb-6"
                     >
-                        <Shield className="text-white" size={32} />
+                        <img src={favicon} alt="MEDBLOCK" className="w-8 h-8" />
                     </motion.div>
                     <motion.h1
                         initial={{ opacity: 0, y: -20 }}

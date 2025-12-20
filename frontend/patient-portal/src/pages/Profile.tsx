@@ -22,7 +22,6 @@ import { useAuth } from '../hooks/useAuth'
 import { apiService } from '../services/api'
 import { useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
-import BackgroundLayer from '../components/BackgroundLayer'
 
 export default function Profile() {
     const { logout, did } = useAuth()
@@ -154,9 +153,8 @@ export default function Profile() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="max-w-5xl mx-auto space-y-6 relative"
+            className="max-w-5xl mx-auto space-y-8 relative"
         >
-            <BackgroundLayer />
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
