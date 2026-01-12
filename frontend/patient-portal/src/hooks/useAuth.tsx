@@ -11,6 +11,7 @@ type Profile = {
 }
 
 type AuthContextType = {
+  token: string | null
   did?: string | null
   patientId?: string | null
   isAuthenticated: boolean
@@ -25,6 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [did, setDid] = useState<string | null>(localStorage.getItem('did'))
   const [patientId, setPatientId] = useState<string | null>(localStorage.getItem('patient_id'))
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('did'))
+  const [token, setToken] = useState<string | null>(localStorage.getItem('access_token'))
   const [profile, setProfile] = useState<Profile | null>(null)
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setDid(newDid)
     setPatientId(newPatientId)
+    setToken(accessToken)
     setIsAuthenticated(true)
   }
 
@@ -67,12 +70,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('patient_id')
     setDid(null)
     setPatientId(null)
+    setToken(null)
     setIsAuthenticated(false)
     setProfile(null)
   }
 
   return (
-    <AuthContext.Provider value={{ did, patientId, isAuthenticated, profile, login, logout }}>
+    <AuthContext.Provider value={{ token, did, patientId, isAuthenticated, profile, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { useEffect, useContext } from 'react'
+import { useRealTime } from './hooks/useRealTime'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import PatientSearch from './pages/PatientSearch'
@@ -21,17 +23,25 @@ import { NotificationProvider } from './context/NotificationContext'
 // Simple auth context
 export const AuthContext = React.createContext<{
     isAuthenticated: boolean
+    token: string | null
     providerName: string
     providerDID: string
     login: (name: string, did: string, token?: string) => void
     logout: () => void
 }>({
     isAuthenticated: false,
+    token: null,
     providerName: '',
     providerDID: '',
     login: () => { },
     logout: () => { },
 })
+
+function RealTimeWrapper({ children }: { children: React.ReactNode }) {
+    const { token, logout } = useContext(AuthContext)
+    useRealTime(token, logout)
+    return <>{children}</>
+}
 
 function App() {
     // Initialize state from localStorage
@@ -44,6 +54,9 @@ function App() {
     const [providerDID, setProviderDID] = useState(() => {
         return localStorage.getItem('provider_did') || ''
     })
+    const [token, setToken] = useState(() => {
+        return localStorage.getItem('access_token') || null
+    })
 
     const login = (name: string, did: string, token?: string) => {
         setIsAuthenticated(true)
@@ -51,7 +64,10 @@ function App() {
         setProviderDID(did)
 
         // Persist to localStorage
-        if (token) localStorage.setItem('access_token', token)
+        if (token) {
+            localStorage.setItem('access_token', token)
+            setToken(token)
+        }
         localStorage.setItem('provider_name', name)
         localStorage.setItem('provider_did', did)
     }
@@ -65,6 +81,7 @@ function App() {
         localStorage.removeItem('access_token')
         localStorage.removeItem('provider_name')
         localStorage.removeItem('provider_did')
+        setToken(null)
         // Clean up legacy keys if any
         localStorage.removeItem('provider_isAuthenticated')
         localStorage.removeItem('did')
@@ -73,8 +90,9 @@ function App() {
 
     return (
         <NotificationProvider>
-            <AuthContext.Provider value={{ isAuthenticated, providerName, providerDID, login, logout }}>
-                <Routes>
+            <AuthContext.Provider value={{ isAuthenticated, token, providerName, providerDID, login, logout }}>
+                <RealTimeWrapper>
+                    <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<SignUpPage />} />
@@ -119,8 +137,9 @@ function App() {
                         />
                     </Route>
                 </Routes>
-            </AuthContext.Provider>
-        </NotificationProvider>
+            </RealTimeWrapper>
+        </AuthContext.Provider>
+    </NotificationProvider>
     )
 }
 

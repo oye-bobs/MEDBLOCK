@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Building, Stethoscope, Ban, Clock } from 'lucide-react'
+import { Shield, Building, Stethoscope, Ban, Clock, AlertTriangle } from 'lucide-react'
 import { apiService } from '../services/api'
 import Swal from 'sweetalert2'
 
@@ -54,6 +54,59 @@ export default function AuthorizedProviders() {
                     'Failed to revoke access.',
                     'error'
                 )
+            }
+        }
+    }
+    const handleReport = async (doctorDid: string, doctorName: string) => {
+        const { value: formValues } = await Swal.fire({
+            title: `Report ${doctorName}`,
+            html:
+                '<select id="swal-input1" class="swal2-input">' +
+                '<option value="" disabled selected>Select a reason</option>' +
+                '<option value="unprofessional_conduct">Unprofessional Conduct</option>' +
+                '<option value="incorrect_data">Incorrect Medical Data</option>' +
+                '<option value="unauthorized_access">Unauthorized Access</option>' +
+                '<option value="privacy_violation">Privacy Violation</option>' +
+                '<option value="other">Other</option>' +
+                '</select>' +
+                '<textarea id="swal-input2" class="swal2-textarea" placeholder="Describe the incident (optional)"></textarea>',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Submit Report',
+            confirmButtonColor: '#ef4444',
+            preConfirm: () => {
+                const reasonElement = document.getElementById('swal-input1') as HTMLSelectElement;
+                const descriptionElement = document.getElementById('swal-input2') as HTMLTextAreaElement;
+                
+                if (!reasonElement.value) {
+                    Swal.showValidationMessage('Please select a reason');
+                    return false;
+                }
+                
+                return {
+                    reason: reasonElement.value,
+                    description: descriptionElement.value
+                }
+            }
+        });
+
+        if (formValues) {
+            try {
+                await apiService.submitReport({
+                    reportedDid: doctorDid,
+                    reason: formValues.reason,
+                    description: formValues.description
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Report Submitted',
+                    text: 'The administrator will investigate this incident. Thank you for helping keep the community safe.',
+                    confirmButtonColor: '#10b981'
+                });
+            } catch (error) {
+                console.error("Failed to submit report", error);
+                Swal.fire('Error', 'Failed to submit report. Please try again later.', 'error');
             }
         }
     }
@@ -160,13 +213,22 @@ export default function AuthorizedProviders() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <button 
-                                                    onClick={() => handleRevoke(consent.id)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors"
-                                                >
-                                                    <Ban size={14} />
-                                                    Revoke
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        onClick={() => handleRevoke(consent.id)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-amber-200 text-amber-600 rounded-lg text-xs font-medium hover:bg-amber-50 transition-colors"
+                                                    >
+                                                        <Ban size={14} />
+                                                        Revoke
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleReport(consent.practitioner?.did, getProviderName(consent.practitioner))}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors"
+                                                    >
+                                                        <AlertTriangle size={14} />
+                                                        Report
+                                                    </button>
+                                                </div>
                                             </td>
                                         </motion.tr>
                                     ))}

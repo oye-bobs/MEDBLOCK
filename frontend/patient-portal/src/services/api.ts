@@ -160,6 +160,12 @@ class ApiService {
         const response = await this.client.delete(`/notifications/${notificationId}`)
         return response.data
     }
+
+    // Reports endpoints
+    async submitReport(data: { reportedDid: string; reason: string; description?: string }) {
+        const response = await this.client.post('/reports', data)
+        return response.data
+    }
 }
 
 export const apiService = new ApiService()

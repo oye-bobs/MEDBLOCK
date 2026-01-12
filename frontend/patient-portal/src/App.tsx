@@ -25,6 +25,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>
 }
 
+import { useRealTime } from './hooks/useRealTime'
+
+function RealTimeWrapper({ children }: { children: React.ReactNode }) {
+    const { token, logout } = useAuth()
+    useRealTime(token, logout)
+    return <>{children}</>
+}
+
 function AppRoutes() {
     return (
         <Routes>
@@ -56,7 +64,9 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
             <NotificationProvider>
                 <AuthProvider>
-                    <AppRoutes />
+                    <RealTimeWrapper>
+                        <AppRoutes />
+                    </RealTimeWrapper>
                 </AuthProvider>
             </NotificationProvider>
         </QueryClientProvider>

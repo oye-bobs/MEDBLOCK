@@ -15,6 +15,9 @@ import {
   ConsentRecord,
   AccessLog,
   Notification,
+  AdminUser,
+  AdminLog,
+  Report,
 } from './database/entities';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { IdentityModule } from './identity/identity.module';
@@ -22,6 +25,8 @@ import { EncryptionModule } from './encryption/encryption.module';
 import { RecordsModule } from './records/records.module';
 import { ConsentModule } from './consent/consent.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -43,6 +48,9 @@ import { NotificationsModule } from './notifications/notifications.module';
             ConsentRecord,
             AccessLog,
             Notification,
+            AdminUser,
+            AdminLog,
+            Report,
           ],
           synchronize: configService.get<boolean>('DATABASE_SYNCHRONIZE', true),
           logging: configService.get<boolean>('DATABASE_LOGGING', false),
@@ -113,6 +121,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     RecordsModule,
     ConsentModule,
     NotificationsModule,
+    AdminModule,
+    ReportsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

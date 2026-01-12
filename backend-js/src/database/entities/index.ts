@@ -7,3 +7,6 @@ export * from './encounter.entity';
 export * from './consent-record.entity';
 export * from './access-log.entity';
 export * from './notification.entity';
+export * from './admin-user.entity';
+export * from './admin-log.entity';
+export * from './report.entity';
