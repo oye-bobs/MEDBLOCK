@@ -56,6 +56,7 @@ import { ReportsModule } from './reports/reports.module';
           logging: configService.get<boolean>('DATABASE_LOGGING', false),
         };
 
+        
         if (type === 'sqlite') {
           return {
             type: 'sqlite',
